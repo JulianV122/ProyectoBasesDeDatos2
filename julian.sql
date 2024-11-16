@@ -61,4 +61,41 @@ INSERT INTO proyecto.informes (id,tipo_informe,fecha,datos_json) VALUES (nextval
 );
 INSERT INTO proyecto.auditorias (id,fecha,nombre_cliente,cantidad,nombre_producto,total) VALUES (nextval('seq_auditorias'),'2024-02-02','Juan',4,'Agua',4000);
 
+--CRUD clientes--
 
+--Crear cliente--
+CREATE OR REPLACE PROCEDURE proyecto.crear_cliente(p_documento varchar, p_nombre varchar, p_direccion varchar, p_telefono varchar, p_email varchar, p_ciudad varchar, p_departamento varchar)
+LANGUAGE plpgsql
+AS $$
+BEGIN 
+	INSERT INTO proyecto.clientes (id,numero_documento,nombre,direccion,telefono,email,ciudad,departamento) VALUES (nextval('seq_clientes'),p_documento,p_nombre,p_direccion,p_telefono,p_email,p_ciudad,p_departamento);
+	raise notice 'Cliente creado con exito';
+	
+END;
+$$;
+
+CALL proyecto.crear_cliente('111','carlos','calle12344','12341123','a@email','manizales','caldas');
+
+--Editar cliente--
+CREATE OR REPLACE PROCEDURE proyecto.editar_cliente(p_id int,p_documento varchar, p_nombre varchar, p_direccion varchar, p_telefono varchar, p_email varchar, p_ciudad varchar, p_departamento varchar)
+LANGUAGE plpgsql
+AS $$
+BEGIN 
+	UPDATE  proyecto.clientes SET numero_documento = p_documento, nombre = p_nombre, direccion = p_direccion, telefono = p_telefono, email = p_email, ciudad = p_ciudad, departamento = p_departamento WHERE id = p_id;
+	RAISE NOTICE 'El cliente ha sido actualizado';
+END;
+$$;
+
+CALL proyecto.editar_cliente(1,'12345','Juanillo','siempreviva','00000','abc@email','pereira','risaralda');
+
+--Eliminar cliente--
+CREATE OR REPLACE PROCEDURE proyecto.eliminar_cliente(p_id int)
+LANGUAGE plpgsql
+AS $$
+BEGIN 
+	DELETE FROM proyecto.clientes WHERE id = p_id;
+	raise notice 'EL cliente ha sido eliminado';
+END;
+$$;
+
+CALL proyecto.eliminar_cliente(2);
