@@ -46,15 +46,14 @@ CREATE TABLE proyecto.productos (
 
 INSERT INTO proyecto.categorias (id, descripcion) VALUES (nextval('seq_categorias'), 'Descripción prueba')
 INSERT INTO proyecto.impuestos (id, nombre, porcentaje) VALUES (nextval('seq_impuestos'), 'IMPOCONSUMO', 0.1)
-INSERT INTO proyecto.productos (id, codigo, descripcion, precio_venta, medida, impuesto_id, categoria_id) VALUES (nextval('seq_productos'), '0001', 'Descripción producto', 7900, 'KILOGRAMOS', 1, 1);
-
+INSERT INTO proyecto.productos (id, codigo, descripcion, precio_venta, medida, impuesto_id, categoria_id) VALUES (nextval('seq_productos'), '0001', 'Descripción producto', 7900, 'KILOGRAMOS', 1, 1)
 
 
 CREATE OR REPLACE PROCEDURE proyecto.crear_producto(p_codigo VARCHAR, p_descripcion VARCHAR, p_precio FLOAT, p_medida VARCHAR, p_impuesto_id INTEGER, p_categoria_id INTEGER)
 LANGUAGE plpgsql
 AS $$
 BEGIN 
-	INSERT INTO proyecto.productos (codigo, descripcion, precio_venta, medida, impuesto_id, categoria_id) VALUES (p_codigo, p_descripcion, p_precio, p_medida, p_impuesto_id, p_categoria_id);
+	INSERT INTO proyecto.productos (id, codigo, descripcion, precio_venta, medida, impuesto_id, categoria_id) VALUES (nextval('seq_productos'), p_codigo, p_descripcion, p_precio, p_medida, p_impuesto_id, p_categoria_id);
 	
 	IF p_precio < 0 THEN
 		RAISE EXCEPTION 'El precio de venta no puede ser negativo';
@@ -68,7 +67,7 @@ BEGIN
 END;
 $$;
 
-CALL proyecto.crear_producto('0002', 'Descripción producto 2', 7900, 'KILOGRAMOS', 1, 1);
+CALL proyecto.crear_producto('0003', 'Descripción producto 2', 7900, 'KILOGRAMOS', 1, 2);
 
 CREATE OR REPLACE PROCEDURE proyecto.modificar_producto(p_id INTEGER, p_codigo VARCHAR, p_descripcion VARCHAR, p_precio FLOAT, p_medida VARCHAR, p_impuesto_id INTEGER, p_categoria_id INTEGER)
 LANGUAGE plpgsql
@@ -115,3 +114,51 @@ $$;
 
 CALL proyecto.eliminar_producto(4);
 
+
+CREATE OR REPLACE PROCEDURE proyecto.crear_categoria(p_descripcion VARCHAR)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	INSERT INTO proyecto.categorias (id, descripcion) VALUES (nextval('seq_categorias'), p_descripcion);
+
+	EXCEPTION
+		WHEN unique_violation THEN
+			RAISE EXCEPTION 'La categoría % ya existe', p_descripcion;
+END;
+$$;
+
+CALL proyecto.crear_categoria('Nueva categoría 2');
+
+CREATE OR REPLACE PROCEDURE proyecto.modificar_categoria(p_id INTEGER, p_descripcion VARCHAR)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	UPDATE proyecto.categorias
+	SET descripcion = p_descripcion
+	WHERE id = p_id;
+
+	IF NOT FOUND THEN
+		RAISE EXCEPTION 'La categoría con id % no existe', p_id;
+	END IF;
+
+	EXCEPTION
+		WHEN unique_violation THEN
+			RAISE EXCEPTION 'La categoría % ya existe', p_descripcion;
+END;
+$$;
+
+CALL proyecto.modificar_categoria(1, 'Categoría actualizada');
+
+CREATE OR REPLACE PROCEDURE proyecto.eliminar_categoria(p_id INTEGER)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	DELETE FROM proyecto.categorias WHERE id = p_id;
+
+	IF NOT FOUND THEN
+		RAISE EXCEPTION 'La categoría con id % no existe', p_id;
+	END IF;
+END;
+$$;
+
+CALL proyecto.eliminar_categoria(1);
