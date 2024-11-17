@@ -162,3 +162,52 @@ END;
 $$;
 
 CALL proyecto.eliminar_categoria(1);
+
+CREATE OR REPLACE PROCEDURE proyecto.crear_impuesto(p_nombre VARCHAR, p_porcentaje FLOAT)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	INSERT INTO proyecto.impuestos (id, nombre, porcentaje) VALUES (nextval('seq_impuestos'), p_nombre, p_porcentaje);
+
+	EXCEPTION
+		WHEN unique_violation THEN
+			RAISE EXCEPTION 'El impuesto % ya existe', p_nombre;
+END;
+$$;
+
+CALL proyecto.crear_impuesto('IVA', 0.19);
+
+CREATE OR REPLACE PROCEDURE proyecto.modificar_impuesto(p_id INTEGER, p_nombre VARCHAR, p_porcentaje FLOAT)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	UPDATE proyecto.impuestos
+	SET nombre = p_nombre,
+		porcentaje = p_porcentaje
+	WHERE id = p_id;
+
+	IF NOT FOUND THEN
+		RAISE EXCEPTION 'El impuesto con id % no existe', p_id;
+	END IF;
+
+	EXCEPTION
+		WHEN unique_violation THEN
+			RAISE EXCEPTION 'El impuesto % ya existe', p_nombre;
+END;
+$$;
+
+CALL proyecto.modificar_impuesto(1, 'IVA actualizado', 0.21);
+
+CREATE OR REPLACE PROCEDURE proyecto.eliminar_impuesto(p_id INTEGER)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	DELETE FROM proyecto.impuestos WHERE id = p_id;
+
+	IF NOT FOUND THEN
+		RAISE EXCEPTION 'El impuesto con id % no existe', p_id;
+	END IF;
+END;
+$$;
+
+CALL proyecto.eliminar_impuesto(1);
