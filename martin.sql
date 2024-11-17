@@ -46,6 +46,72 @@ CREATE TABLE proyecto.productos (
 
 INSERT INTO proyecto.categorias (id, descripcion) VALUES (nextval('seq_categorias'), 'Descripción prueba')
 INSERT INTO proyecto.impuestos (id, nombre, porcentaje) VALUES (nextval('seq_impuestos'), 'IMPOCONSUMO', 0.1)
-INSERT INTO proyecto.productos (id, codigo, descripcion, precio_venta, medida, impuesto_id, categoria_id) VALUES (nextval('seq_productos'), '0001', 'Descripción producto', 7900, 'KILOGRAMOS', 1, 1)
+INSERT INTO proyecto.productos (id, codigo, descripcion, precio_venta, medida, impuesto_id, categoria_id) VALUES (nextval('seq_productos'), '0001', 'Descripción producto', 7900, 'KILOGRAMOS', 1, 1);
 
+
+
+CREATE OR REPLACE PROCEDURE proyecto.crear_producto(p_codigo VARCHAR, p_descripcion VARCHAR, p_precio FLOAT, p_medida VARCHAR, p_impuesto_id INTEGER, p_categoria_id INTEGER)
+LANGUAGE plpgsql
+AS $$
+BEGIN 
+	INSERT INTO proyecto.productos (codigo, descripcion, precio_venta, medida, impuesto_id, categoria_id) VALUES (p_codigo, p_descripcion, p_precio, p_medida, p_impuesto_id, p_categoria_id);
+	
+	IF p_precio < 0 THEN
+		RAISE EXCEPTION 'El precio de venta no puede ser negativo';
+	END IF;
+
+	EXCEPTION
+		WHEN unique_violation THEN
+			RAISE EXCEPTION 'El código % ya existe', p_codigo;
+		WHEN foreign_key_violation THEN
+			RAISE EXCEPTION 'La categoría o el impuesto no existen';
+END;
+$$;
+
+CALL proyecto.crear_producto('0002', 'Descripción producto 2', 7900, 'KILOGRAMOS', 1, 1);
+
+CREATE OR REPLACE PROCEDURE proyecto.modificar_producto(p_id INTEGER, p_codigo VARCHAR, p_descripcion VARCHAR, p_precio FLOAT, p_medida VARCHAR, p_impuesto_id INTEGER, p_categoria_id INTEGER)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	IF p_precio < 0 THEN
+		RAISE EXCEPTION 'El precio de venta no puede ser negativo';
+	END IF;
+
+	UPDATE proyecto.productos
+	SET codigo = p_codigo,
+		descripcion = p_descripcion,
+		precio_venta = p_precio,
+		medida = p_medida,
+		impuesto_id = p_impuesto_id,
+		categoria_id = p_categoria_id
+	WHERE id = p_id;
+
+	IF NOT FOUND THEN
+		RAISE EXCEPTION 'El producto con id % no existe', p_id;
+	END IF;
+
+	EXCEPTION
+		WHEN unique_violation THEN
+			RAISE EXCEPTION 'El código % ya existe', p_codigo;
+		WHEN foreign_key_violation THEN
+			RAISE EXCEPTION 'La categoría o el impuesto no existen';
+END;
+$$;
+
+CALL proyecto.modificar_producto(4, '0002', 'Descripción producto 3', 8500, 'LITROS', 1, 1);
+
+CREATE OR REPLACE PROCEDURE proyecto.eliminar_producto(p_id INTEGER)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	DELETE FROM proyecto.productos WHERE id = p_id;
+
+	IF NOT FOUND THEN
+		RAISE EXCEPTION 'El producto con id % no existe', p_id;
+	END IF;
+END;
+$$;
+
+CALL proyecto.eliminar_producto(4);
 
