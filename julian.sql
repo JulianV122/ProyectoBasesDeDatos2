@@ -136,3 +136,39 @@ END;
 $$;
 
 CALL proyecto.eliminar_inventario(1);
+
+--CRUD Informes--
+--Crear informe--
+CREATE OR REPLACE PROCEDURE proyecto.crear_informe(p_tipo_informe varchar, p_fecha date, p_datos_json jsonb)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	INSERT INTO proyecto.informes (id,tipo_informe,fecha,datos_json) VALUES (nextval('seq_informes'),p_tipo_informe,p_fecha,p_datos_json);
+	RAISE NOTICE 'Informe creado exitosamente';
+END;
+$$;
+
+CALL proyecto.crear_informe('Factura','2024-01-01','{"cliente":"Paco","codigo":"123"}');
+
+--Editar informe--
+CREATE OR REPLACE PROCEDURE proyecto.editar_informe(p_id int,p_tipo_informe varchar, p_fecha date, p_datos_json jsonb)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	UPDATE proyecto.informes SET tipo_informe = p_tipo_informe, fecha = p_fecha, datos_json = p_datos_json WHERE id = p_id;
+	RAISE NOTICE 'El informe ha sido actualizado';
+END;
+
+CALL proyecto.editar_informe(1,'Factura','2024-02-02','{"cliente":"Carlos","codigo":"321"}');
+
+--Eliminar informe--
+CREATE OR REPLACE PROCEDURE proyecto.eliminar_informe(p_id int)
+LANGUAGE plpgsql
+AS $$
+BEGIN 
+	DELETE FROM proyecto.informes WHERE id = p_id;
+	raise notice 'EL informe ha sido eliminado';
+END;
+$$;
+
+CALL proyecto.eliminar_informe(1);
