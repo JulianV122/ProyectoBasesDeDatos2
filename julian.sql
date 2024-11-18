@@ -246,3 +246,52 @@ END;
 $$;
 
 CALL proyecto.eliminar_auditoria(1);
+
+--FUNCIONALIDAD 11--
+--Informe 10 productos más vendidos--
+CREATE OR REPLACE FUNCTION proyecto.informe_top10()
+RETURNS TABLE(
+    producto_id INT,
+    codigo VARCHAR,
+    nombre VARCHAR,
+    total_vendido BIGINT,
+    factura_id INT
+) 
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT df.producto_id, p.codigo, p.nombre, SUM(df.cantidad) AS total_vendido, df.factura_id
+    FROM proyecto.detalles_facturas df JOIN proyecto.productos p ON df.producto_id = p.id GROUP BY df.producto_id, p.codigo, p.nombre, df.factura_id 
+	ORDER BY total_vendido DESC LIMIT 10;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION proyecto.insertar_informe_top10()
+RETURNS VOID
+AS $$
+DECLARE
+    datos_json jsonb;
+BEGIN
+    SELECT jsonb_agg(
+        jsonb_build_object(
+            'producto_id', producto_id,
+            'codigo', codigo,
+            'nombre', nombre,
+            'total_vendido', total_vendido,
+            'factura_id', factura_id
+        )
+    )
+    INTO datos_json
+    FROM proyecto.informe_top10();
+
+    -- Insertar el informe en la tabla 'proyecto.informes'
+    INSERT INTO proyecto.informes (id,tipo_informe, fecha, datos_json)
+    VALUES (nextval('seq_informes'),'Top 10 productos más vendidos', CURRENT_DATE, datos_json);
+
+    -- Confirmar inserción (opcional para logging)
+    RAISE NOTICE 'Informe Top 10 insertado con éxito en la fecha %', CURRENT_DATE;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT proyecto.insertar_informe_top10();
