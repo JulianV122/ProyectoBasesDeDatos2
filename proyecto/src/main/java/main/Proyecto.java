@@ -14,5 +14,7 @@ public class Proyecto {
         Producto.agregarProducto(connection, "123", "Producto 1", "Descripcion 1", 100, "unidad", 2, 4, 10);
 
         Producto.obtenerProductos(connection);
+        
+        Clientes.agregarCliente(connection, "1234", "Alberto", "Calle 1234", "31287637421", "Alberto@gmail.com", "Manizales", "Caldas");
     }
 }
