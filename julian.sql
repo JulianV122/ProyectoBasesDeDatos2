@@ -116,6 +116,9 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
 	INSERT INTO proyecto.inventarios (id,fecha,tipo_movimiento,observaciones,id_producto) VALUES (nextval('seq_inventarios'),p_fecha,p_tipo_movimiento,p_observaciones,p_id_producto);
+	EXCEPTION
+		WHEN unique_violation THEN
+			RAISE EXCEPTION 'El id % ya existe y no se puede repetir', p_id;
 	RAISE NOTICE 'Inventario creado exitosamente';
 END;
 $$;
@@ -128,7 +131,10 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
 	UPDATE proyecto.inventarios SET fecha= p_fecha, tipo_movimiento= p_tipo_movimiento, observaciones = p_observaciones, id_producto = p_id_producto WHERE id = p_id;
-	RAISE NOTICE 'El inventarios ha sido actualizado';
+	IF NOT FOUND THEN
+		RAISE EXCEPTION 'El inventario con ID % no existe', p_id;
+	END IF;
+	RAISE NOTICE 'El inventario con ID % ha sido actualizado', p_id;
 END;
 $$;
 
@@ -140,7 +146,10 @@ LANGUAGE plpgsql
 AS $$
 BEGIN 
 	DELETE FROM proyecto.inventarios WHERE id = p_id;
-	raise notice 'EL inventario ha sido eliminado';
+	IF NOT FOUND THEN
+		RAISE EXCEPTION 'El inventario con ID % no existe', p_id;
+	END IF;
+	raise notice 'El inventario con ID % ha sido eliminado', p_id;
 END;
 $$;
 
