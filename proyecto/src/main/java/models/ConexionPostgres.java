@@ -9,7 +9,7 @@ import java.sql.SQLException;
 public class ConexionPostgres {
     private static ConexionPostgres instance;
     private Connection connection;
-    private String url = "jdbc:postgresql://localhost:5433/postgres";
+    private String url = "jdbc:postgresql://localhost:5432/postgres";
     private String username = "postgres";
     private String password = "martin";
 
@@ -33,5 +33,13 @@ public class ConexionPostgres {
         } 
 
         return instance;
+    }
+
+    public static void closeConnection() {
+        try {
+            instance.connection.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 }

@@ -21,6 +21,7 @@ public class Clientes {
             stmt.setString(6, ciudad);
             stmt.setString(7, departamento);
             stmt.execute();
+            stmt.close();
             return true;
         } catch (SQLException e) {
             System.out.println(e.getMessage());
@@ -42,6 +43,7 @@ public class Clientes {
             stmt.setString(7, ciudad);
             stmt.setString(8, departamento);
             stmt.execute();
+            stmt.close();
             return true;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -55,6 +57,7 @@ public class Clientes {
             CallableStatement stmt = connection.prepareCall(sql);
             stmt.setInt(1, id);
             stmt.execute();
+            stmt.close();
             return true;
         } catch (SQLException e) {
             e.printStackTrace();

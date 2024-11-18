@@ -20,6 +20,7 @@ public class Producto {
             stmt.setInt(7, categoriaId);
             stmt.setInt(8, stock);
             stmt.execute();
+            stmt.close();
             return true;
         } catch (SQLException e) {
             System.out.println(e.getMessage());
@@ -42,6 +43,7 @@ public class Producto {
             stmt.setInt(8, categoriaId);
             stmt.setInt(9, stock);
             stmt.execute();
+            stmt.close();
             return true;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -55,6 +57,7 @@ public class Producto {
             CallableStatement stmt = connection.prepareCall(sql);
             stmt.setInt(1, id);
             stmt.execute();
+            stmt.close();
             return true;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -79,6 +82,7 @@ public class Producto {
                 System.out.println(rs.getInt("v_categoria_id"));
                 System.out.println(rs.getInt("v_stock"));
             }
+            stmt.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }

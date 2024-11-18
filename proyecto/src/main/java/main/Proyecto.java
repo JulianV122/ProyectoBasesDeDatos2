@@ -16,5 +16,9 @@ public class Proyecto {
         Producto.obtenerProductos(connection);
         
         Clientes.agregarCliente(connection, "1234", "Alberto", "Calle 1234", "31287637421", "Alberto@gmail.com", "Manizales", "Caldas");
+
+        
+        ConexionPostgres.closeConnection();
+
     }
 }
