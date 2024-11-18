@@ -208,6 +208,9 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
 	INSERT INTO proyecto.auditorias (id,fecha,nombre_cliente,cantidad,nombre_producto,total) VALUES (nextval('seq_auditorias'),p_fecha,p_nombre_cliente,p_cantidad,p_nombre_producto,p_total);
+	EXCEPTION
+		WHEN unique_violation THEN
+			RAISE EXCEPTION 'El id % ya existe y no se puede repetir', p_id;
 	RAISE NOTICE 'Auditoria creada exitosamente';
 END;
 $$;
@@ -220,7 +223,10 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
 	UPDATE proyecto.auditorias SET fecha = p_fecha, nombre_cliente = p_nombre_cliente, cantidad = p_cantidad, nombre_producto = p_nombre_producto, total = p_total WHERE id = p_id;
-	RAISE NOTICE 'La auditoria ha sido actualizada';
+	IF NOT FOUND THEN
+		RAISE EXCEPTION 'La auditoria con ID % no existe', p_id;
+	END IF;
+	RAISE NOTICE 'La auditoria con ID % ha sido actualizada', p_id;
 END;
 $$;
 
@@ -232,7 +238,10 @@ LANGUAGE plpgsql
 AS $$
 BEGIN 
 	DELETE FROM proyecto.auditorias WHERE id = p_id;
-	raise notice 'La auditoria ha sido eliminada';
+	IF NOT FOUND THEN
+		RAISE EXCEPTION 'La auditoria con ID % no existe', p_id;
+	END IF;
+	raise notice 'La auditoria con ID % ha sido eliminada', p_id;
 END;
 $$;
 
