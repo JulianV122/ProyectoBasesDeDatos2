@@ -99,3 +99,40 @@ END;
 $$;
 
 CALL proyecto.eliminar_cliente(2);
+
+--CRUD Inventarios--
+--Crear inventario--
+CREATE OR REPLACE PROCEDURE proyecto.crear_inventario(p_fecha date, p_tipo_movimiento tipos_movimiento, p_observaciones varchar, p_id_producto int)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	INSERT INTO proyecto.inventarios (id,fecha,tipo_movimiento,observaciones,id_producto) VALUES (nextval('seq_inventarios'),p_fecha,p_tipo_movimiento,p_observaciones,p_id_producto);
+	RAISE NOTICE 'Inventario creado exitosamente';
+END;
+$$;
+
+CALL crear_inventario('2024-01-01','ENTRADA','Nuevo inventario',1);
+
+--Editar inventario--
+CREATE OR REPLACE PROCEDURE proyecto.editar_inventario(p_id int,p_fecha date, p_tipo_movimiento tipos_movimiento, p_observaciones varchar, p_id_producto int)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	UPDATE proyecto.inventarios SET fecha= p_fecha, tipo_movimiento= p_tipo_movimiento, observaciones = p_observaciones, id_producto = p_id_producto WHERE id = p_id;
+	RAISE NOTICE 'El inventarios ha sido actualizado';
+END;
+$$;
+
+CALL proyecto.editar_inventario(1,'2024-01-01','SALIDA','Inventario editado',1);
+
+--Eliminar inventario--
+CREATE OR REPLACE PROCEDURE proyecto.eliminar_inventario(p_id int)
+LANGUAGE plpgsql
+AS $$
+BEGIN 
+	DELETE FROM proyecto.inventarios WHERE id = p_id;
+	raise notice 'EL inventario ha sido eliminado';
+END;
+$$;
+
+CALL proyecto.eliminar_inventario(1);
