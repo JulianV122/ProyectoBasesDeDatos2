@@ -158,6 +158,7 @@ BEGIN
 	UPDATE proyecto.informes SET tipo_informe = p_tipo_informe, fecha = p_fecha, datos_json = p_datos_json WHERE id = p_id;
 	RAISE NOTICE 'El informe ha sido actualizado';
 END;
+$$;
 
 CALL proyecto.editar_informe(1,'Factura','2024-02-02','{"cliente":"Carlos","codigo":"321"}');
 
@@ -172,3 +173,40 @@ END;
 $$;
 
 CALL proyecto.eliminar_informe(1);
+
+--CRUD Auditorias--
+--Crear auditoria--
+CREATE OR REPLACE PROCEDURE proyecto.crear_auditoria(p_fecha date, p_nombre_cliente varchar, p_cantidad int, p_nombre_producto varchar, p_total numeric)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	INSERT INTO proyecto.auditorias (id,fecha,nombre_cliente,cantidad,nombre_producto,total) VALUES (nextval('seq_auditorias'),p_fecha,p_nombre_cliente,p_cantidad,p_nombre_producto,p_total);
+	RAISE NOTICE 'Auditoria creada exitosamente';
+END;
+$$;
+
+CALL proyecto.crear_auditoria('2024-02-02','Juan',4,'Agua',4000);
+
+--Editar auditoria--
+CREATE OR REPLACE PROCEDURE proyecto.editar_auditoria(p_id int,p_fecha date, p_nombre_cliente varchar, p_cantidad int, p_nombre_producto varchar, p_total numeric)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	UPDATE proyecto.auditorias SET fecha = p_fecha, nombre_cliente = p_nombre_cliente, cantidad = p_cantidad, nombre_producto = p_nombre_producto, total = p_total WHERE id = p_id;
+	RAISE NOTICE 'La auditoria ha sido actualizada';
+END;
+$$;
+
+CALL proyecto.editar_auditoria(1,'2024-02-02','Juanillo',4,'Gaseosa',6000);
+
+--Eliminar auditoria--
+CREATE OR REPLACE PROCEDURE proyecto.eliminar_auditoria(p_id int)
+LANGUAGE plpgsql
+AS $$
+BEGIN 
+	DELETE FROM proyecto.auditorias WHERE id = p_id;
+	raise notice 'La auditoria ha sido eliminada';
+END;
+$$;
+
+CALL proyecto.eliminar_auditoria(1);
