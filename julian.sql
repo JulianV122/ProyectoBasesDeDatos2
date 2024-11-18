@@ -123,7 +123,7 @@ BEGIN
 END;
 $$;
 
-CALL crear_inventario('2024-01-01','ENTRADA','Nuevo inventario',1);
+CALL crear_inventario('2024-01-01','ENTRADA','Nuevo inventario',1000);
 
 --Editar inventario--
 CREATE OR REPLACE PROCEDURE proyecto.editar_inventario(p_id int,p_fecha date, p_tipo_movimiento tipos_movimiento, p_observaciones varchar, p_id_producto int)
@@ -162,6 +162,9 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
 	INSERT INTO proyecto.informes (id,tipo_informe,fecha,datos_json) VALUES (nextval('seq_informes'),p_tipo_informe,p_fecha,p_datos_json);
+	EXCEPTION
+		WHEN unique_violation THEN
+			RAISE EXCEPTION 'El id % ya existe y no se puede repetir', p_id;
 	RAISE NOTICE 'Informe creado exitosamente';
 END;
 $$;
@@ -174,7 +177,10 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
 	UPDATE proyecto.informes SET tipo_informe = p_tipo_informe, fecha = p_fecha, datos_json = p_datos_json WHERE id = p_id;
-	RAISE NOTICE 'El informe ha sido actualizado';
+	IF NOT FOUND THEN
+		RAISE EXCEPTION 'El informe con ID % no existe', p_id;
+	END IF;
+	RAISE NOTICE 'El informe con ID % ha sido actualizado', p_id;
 END;
 $$;
 
@@ -186,7 +192,10 @@ LANGUAGE plpgsql
 AS $$
 BEGIN 
 	DELETE FROM proyecto.informes WHERE id = p_id;
-	raise notice 'EL informe ha sido eliminado';
+	IF NOT FOUND THEN
+		RAISE EXCEPTION 'El informe con ID % no existe', p_id;
+	END IF;
+	raise notice 'El informe con ID % ha sido eliminado', p_id;
 END;
 $$;
 
