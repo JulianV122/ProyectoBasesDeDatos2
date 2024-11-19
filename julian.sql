@@ -295,3 +295,25 @@ END;
 $$ LANGUAGE plpgsql;
 
 SELECT proyecto.insertar_informe_top10();
+
+-- FUNCIONALIDAD 15 --
+-- Búsqueda de los registros de auditoria por los atributos fecha, nombre del cliente y producto --
+CREATE OR REPLACE FUNCTION proyecto.consultar_auditorias(p_fecha date, p_nombre_cliente varchar, p_nombre_producto varchar)
+RETURNS TABLE(
+	auditoria_id INT,
+	auditoria_fecha DATE,
+	auditoria_nombre_cliente VARCHAR,
+	auditoria_cantidad INT,
+	auditoria_nombre_producto VARCHAR,
+	auditoria_total NUMERIC
+)
+AS $$
+BEGIN
+	RETURN QUERY
+	SELECT id, fecha, nombre_cliente, cantidad, nombre_producto, total
+	FROM proyecto.auditorias
+	WHERE fecha = p_fecha AND nombre_cliente = p_nombre_cliente AND nombre_producto = p_nombre_producto;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT * FROM proyecto.consultar_auditorias('2024-02-02', 'Juan', 'Agua');
