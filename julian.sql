@@ -296,6 +296,104 @@ $$ LANGUAGE plpgsql;
 
 SELECT proyecto.insertar_informe_top10();
 
+-- FUNCIONALIDAD 12 --
+--Informe de ventas en donde se vean la factura y los productos vendidos de un mes determinado, y los cálculos totales facturados del mes.--
+CREATE OR REPLACE FUNCTION proyecto.informe_ventas_mensual(anio INT, mes INT)
+RETURNS TABLE(
+    factura_id INT,
+    codigo_factura VARCHAR,
+    fecha_factura DATE,
+    producto_id INT,
+    producto_nombre VARCHAR,
+    cantidad_vendida INT,
+    valor_total_producto DOUBLE PRECISION,
+    subtotal_mensual DOUBLE PRECISION,
+    impuestos_mensuales DOUBLE PRECISION,
+    total_facturado DOUBLE PRECISION
+)
+AS $$
+BEGIN
+    RETURN QUERY
+    WITH ventas_mensuales AS (
+        SELECT 
+            f.id AS factura_id,
+            f.codigo AS codigo_factura,
+            f.fecha AS fecha_factura,
+            df.producto_id,
+            p.nombre AS producto_nombre,
+            df.cantidad AS cantidad_vendida,
+            df.valor_total AS valor_total_producto
+        FROM 
+            proyecto.facturas f
+        JOIN 
+            proyecto.detalles_facturas df ON f.id = df.factura_id
+        JOIN 
+            proyecto.productos p ON df.producto_id = p.id
+        WHERE 
+            EXTRACT(YEAR FROM f.fecha) = anio AND
+            EXTRACT(MONTH FROM f.fecha) = mes
+    ),
+    calculos_totales AS (
+        SELECT 
+            SUM(f.subtotal) AS subtotal_mensual,
+            SUM(f.total_impuestos) AS impuestos_mensuales,
+            SUM(f.total) AS total_facturado
+        FROM 
+            proyecto.facturas f
+        WHERE 
+            EXTRACT(YEAR FROM f.fecha) = anio AND
+            EXTRACT(MONTH FROM f.fecha) = mes
+    )
+    SELECT 
+        v.factura_id,
+        v.codigo_factura,
+        v.fecha_factura,
+        v.producto_id,
+        v.producto_nombre,
+        v.cantidad_vendida,
+        v.valor_total_producto,
+        c.subtotal_mensual,
+        c.impuestos_mensuales,
+        c.total_facturado
+    FROM 
+        ventas_mensuales v, 
+        calculos_totales c;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT * FROM proyecto.informe_ventas_mensual(2024, 11);
+
+-- FUNCIONALIDAD 14 --
+-- Cuando se agregue un producto a la factura, se debe hacer el registro en la tabla auditoria (TRIGGER) --
+CREATE OR REPLACE FUNCTION proyecto.registrar_auditoria()
+RETURNS TRIGGER AS $$
+DECLARE
+    nombre_producto varchar(20);
+    nombre_cliente varchar(30);
+    total numeric;
+BEGIN
+    SELECT nombre INTO nombre_producto FROM proyecto.productos WHERE id = NEW.producto_id;
+
+	SELECT c.nombre INTO nombre_cliente FROM proyecto.clientes c JOIN proyecto.facturas f ON f.id_cliente = c.id WHERE f.id = NEW.factura_id;
+
+    total := NEW.cantidad * (NEW.valor_total / NULLIF(NEW.cantidad, 0)); 
+
+    INSERT INTO proyecto.auditorias (id,fecha, nombre_cliente, cantidad, nombre_producto, total) VALUES (nextval('seq_auditorias'),CURRENT_DATE, nombre_cliente, NEW.cantidad, nombre_producto, total);
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger
+CREATE TRIGGER trg_registrar_auditoria
+AFTER INSERT ON proyecto.detalles_facturas
+FOR EACH ROW
+EXECUTE FUNCTION proyecto.registrar_auditoria();
+
+
+INSERT INTO proyecto.detalles_facturas (id, cantidad, valor_total, descuento, producto_id, factura_id) VALUES (nextval('id_detalles_facturas'), 2, 20000, 0, 1003, 4);
+
+
 -- FUNCIONALIDAD 15 --
 -- Búsqueda de los registros de auditoria por los atributos fecha, nombre del cliente y producto --
 CREATE OR REPLACE FUNCTION proyecto.consultar_auditorias(p_fecha date, p_nombre_cliente varchar, p_nombre_producto varchar)
