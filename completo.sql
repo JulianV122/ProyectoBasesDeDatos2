@@ -38,6 +38,10 @@ CREATE SEQUENCE proyecto.seq_auditorias
 	START WITH 1
 	INCREMENT BY 1;
 
+CREATE SEQUENCE proyecto.seq_xml
+	START WITH 1
+	INCREMENT BY 1;
+
 CREATE TYPE proyecto.tipos_movimiento AS ENUM ('ENTRADA','SALIDA'); 
 
 CREATE TYPE estado_factura AS ENUM ('PAGADA', 'PENDIENTE', 'EN PROCESO');
@@ -145,6 +149,15 @@ CREATE TABLE proyecto.detalles_facturas (
 	CONSTRAINT detalles_facturas_productos_fk FOREIGN KEY (producto_id) REFERENCES proyecto.productos(id)  ON DELETE CASCADE ON UPDATE CASCADE,	
 	CONSTRAINT detalles_facturas_facturas_fk FOREIGN KEY (factura_id) REFERENCES proyecto.facturas(id)  ON DELETE CASCADE ON UPDATE CASCADE
 );
+
+CREATE TABLE proyecto.xml_facturas (
+	id serial NOT NULL,
+	id_factura serial NOT NULL,
+	descripcion xml NOT NULL,
+	CONSTRAINT xml_facturas_pk PRIMARY KEY (id),
+	CONSTRAINT xml_facturas_facturas_fk FOREIGN KEY (id_factura) REFERENCES proyecto.facturas(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
 
 
 -- Insertar datos de prueba
@@ -592,19 +605,436 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE PROCEDURE proyecto.agregar_cliente_a_factura(p_factura_id INT, p_cliente_id INT) 
-LANGUAGE plpgsql
+
+-- FUNCIONALIDAD 12 --
+--Informe de ventas en donde se vean la factura y los productos vendidos de un mes determinado, y los cálculos totales facturados del mes.--
+CREATE OR REPLACE FUNCTION proyecto.informe_ventas_mensual(anio INT, mes INT)
+RETURNS TABLE(
+    factura_id INT,
+    codigo_factura VARCHAR,
+    fecha_factura DATE,
+    producto_id INT,
+    producto_nombre VARCHAR,
+    cantidad_vendida INT,
+    valor_total_producto DOUBLE PRECISION,
+    subtotal_mensual DOUBLE PRECISION,
+    impuestos_mensuales DOUBLE PRECISION,
+    total_facturado DOUBLE PRECISION
+)
 AS $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM proyecto.clientes WHERE id = cliente_id) THEN
-        RAISE EXCEPTION 'El cliente con id % no existe.', cliente_id;
+    RETURN QUERY
+    WITH ventas_mensuales AS (
+        SELECT 
+            f.id AS factura_id,
+            f.codigo AS codigo_factura,
+            f.fecha AS fecha_factura,
+            df.producto_id,
+            p.nombre AS producto_nombre,
+            df.cantidad AS cantidad_vendida,
+            df.valor_total AS valor_total_producto
+        FROM 
+            proyecto.facturas f
+        JOIN 
+            proyecto.detalles_facturas df ON f.id = df.factura_id
+        JOIN 
+            proyecto.productos p ON df.producto_id = p.id
+        WHERE 
+            EXTRACT(YEAR FROM f.fecha) = anio AND
+            EXTRACT(MONTH FROM f.fecha) = mes
+    ),
+    calculos_totales AS (
+        SELECT 
+            SUM(f.subtotal) AS subtotal_mensual,
+            SUM(f.total_impuestos) AS impuestos_mensuales,
+            SUM(f.total) AS total_facturado
+        FROM 
+            proyecto.facturas f
+        WHERE 
+            EXTRACT(YEAR FROM f.fecha) = anio AND
+            EXTRACT(MONTH FROM f.fecha) = mes
+    )
+    SELECT 
+        v.factura_id,
+        v.codigo_factura,
+        v.fecha_factura,
+        v.producto_id,
+        v.producto_nombre,
+        v.cantidad_vendida,
+        v.valor_total_producto,
+        c.subtotal_mensual,
+        c.impuestos_mensuales,
+        c.total_facturado
+    FROM 
+        ventas_mensuales v, 
+        calculos_totales c;
+END;
+$$ LANGUAGE plpgsql;
+
+-- FUNCIONALIDAD 14 --
+-- Cuando se agregue un producto a la factura, se debe hacer el registro en la tabla auditoria (TRIGGER) --
+CREATE OR REPLACE FUNCTION proyecto.registrar_auditoria()
+RETURNS TRIGGER AS $$
+DECLARE
+    nombre_producto varchar(20);
+    nombre_cliente varchar(30);
+    total numeric;
+BEGIN
+    SELECT nombre INTO nombre_producto FROM proyecto.productos WHERE id = NEW.producto_id;
+
+	SELECT c.nombre INTO nombre_cliente FROM proyecto.clientes c JOIN proyecto.facturas f ON f.id_cliente = c.id WHERE f.id = NEW.factura_id;
+
+    total := NEW.cantidad * (NEW.valor_total / NULLIF(NEW.cantidad, 0)); 
+
+    INSERT INTO proyecto.auditorias (id,fecha, nombre_cliente, cantidad, nombre_producto, total) VALUES (nextval('seq_auditorias'),CURRENT_DATE, nombre_cliente, NEW.cantidad, nombre_producto, total);
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger
+CREATE TRIGGER trg_registrar_auditoria
+AFTER INSERT ON proyecto.detalles_facturas
+FOR EACH ROW
+EXECUTE FUNCTION proyecto.registrar_auditoria();
+
+-- FUNCIONALIDAD 15 --
+-- Búsqueda de los registros de auditoria por los atributos fecha, nombre del cliente y producto --
+CREATE OR REPLACE FUNCTION proyecto.consultar_auditorias(p_fecha date, p_nombre_cliente varchar, p_nombre_producto varchar)
+RETURNS TABLE(
+	auditoria_id INT,
+	auditoria_fecha DATE,
+	auditoria_nombre_cliente VARCHAR,
+	auditoria_cantidad INT,
+	auditoria_nombre_producto VARCHAR,
+	auditoria_total NUMERIC
+)
+AS $$
+BEGIN
+	RETURN QUERY
+	SELECT id, fecha, nombre_cliente, cantidad, nombre_producto, total
+	FROM proyecto.auditorias
+	WHERE fecha = p_fecha AND nombre_cliente = p_nombre_cliente AND nombre_producto = p_nombre_producto;
+END;
+$$ LANGUAGE plpgsql;
+
+
+-- MAJO ---------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION proyecto.agregar_cliente_a_factura(p_factura_id INT, p_cliente_id INT)
+RETURNS VARCHAR AS $$
+DECLARE
+    v_resultado VARCHAR;
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM proyecto.clientes WHERE id = p_cliente_id) THEN
+        RAISE EXCEPTION 'El cliente con id % no existe.', p_cliente_id;
     END IF;
 
-    UPDATE proyecto.facturas  SET id_cliente = cliente_id   WHERE id = factura_id;
+    UPDATE proyecto.facturas SET id_cliente = p_cliente_id WHERE id = p_factura_id;
 
-    
-    EXCEPTION
-        WHEN foreign_key_violation THEN
-            RAISE NOTICE 'Verifique que el cliente y la factura existan.';
-END
-$$;
+    v_resultado := format('Cliente % agregado a la factura %.', p_cliente_id, p_factura_id);
+    RETURN v_resultado;
+
+EXCEPTION
+    WHEN foreign_key_violation THEN
+        RETURN 'Verifique que el cliente y la factura existan.';
+END;
+$$ LANGUAGE plpgsql;
+
+--Agregar productos al detalle de la factura
+CREATE OR REPLACE FUNCTION proyecto.agregar_producto_a_detalle_factura(p_factura_id INTEGER, p_producto_id INTEGER, p_cantidad INTEGER)
+RETURNS VARCHAR AS $$
+DECLARE
+    v_precio_producto DOUBLE PRECISION;
+    v_resultado VARCHAR;
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM proyecto.facturas WHERE id = p_factura_id) THEN
+        RAISE EXCEPTION 'La factura con % no existe.', p_factura_id;
+    END IF;
+
+    SELECT precio_venta INTO v_precio_producto FROM proyecto.productos WHERE id = p_producto_id;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'El producto con % no existe.', p_producto_id;
+    END IF;
+
+    INSERT INTO proyecto.detalles_facturas (id, cantidad, valor_total, descuento, producto_id, factura_id)
+    VALUES (nextval('id_detalles_facturas'), p_cantidad, p_cantidad * v_precio_producto, 0, p_producto_id, p_factura_id);
+
+    v_resultado := format('Producto % agregado a la factura % con cantidad %.', p_producto_id, p_factura_id, p_cantidad);
+    RETURN v_resultado;
+
+EXCEPTION
+    WHEN foreign_key_violation THEN
+        RETURN 'Verifique que el producto y la factura existan.';
+    WHEN data_exception THEN
+        RETURN 'Cantidad o precio inválido.';
+END;
+$$ LANGUAGE plpgsql;
+
+
+--Calcular impuestos de los productos
+CREATE OR REPLACE FUNCTION proyecto.calcular_impuestos_factura(p_factura_id INTEGER)
+RETURNS VARCHAR AS $$
+DECLARE
+    v_cantidad INTEGER;
+    v_precio_venta DOUBLE PRECISION;
+    v_porcentaje_impuesto DOUBLE PRECISION;
+    v_total_impuestos DOUBLE PRECISION := 0;
+    v_subtotal DOUBLE PRECISION := 0;
+    v_impuesto DOUBLE PRECISION;
+    v_resultado VARCHAR;
+    cur CURSOR FOR
+        SELECT df.cantidad, p.precio_venta, i.porcentaje 
+        FROM proyecto.detalles_facturas df
+        JOIN proyecto.productos p ON df.producto_id = p.id
+        JOIN proyecto.impuestos i ON p.impuesto_id = i.id
+        WHERE df.factura_id = p_factura_id;
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM proyecto.facturas WHERE id = p_factura_id) THEN
+        RAISE EXCEPTION 'La factura con % no existe.', p_factura_id;
+    END IF;
+
+    OPEN cur;
+    LOOP
+        FETCH cur INTO v_cantidad, v_precio_venta, v_porcentaje_impuesto;
+        EXIT WHEN NOT FOUND;
+
+        v_impuesto := v_cantidad * v_precio_venta * v_porcentaje_impuesto / 100;
+        v_total_impuestos := v_total_impuestos + v_impuesto;
+        v_subtotal := v_subtotal + (v_cantidad * v_precio_venta);
+    END LOOP;
+    CLOSE cur;
+
+    UPDATE proyecto.facturas
+    SET subtotal = v_subtotal, 
+        total_impuestos = v_total_impuestos, 
+        total = v_subtotal + v_total_impuestos
+    WHERE id = p_factura_id;
+
+    v_resultado := format('Impuestos calculados para la factura %: Subtotal = %, Total Impuestos = %, Total = %', p_factura_id, v_subtotal, v_total_impuestos, v_subtotal + v_total_impuestos);
+    RETURN v_resultado;
+
+EXCEPTION
+    WHEN foreign_key_violation THEN
+        RETURN 'Factura inválida.';
+END;
+$$ LANGUAGE plpgsql;
+
+
+--Implementar descuentos por producto o por el total de factura
+CREATE OR REPLACE FUNCTION proyecto.aplicar_descuento_factura(p_factura_id INTEGER, p_tipo_descuento VARCHAR, p_valor_descuento DOUBLE PRECISION)
+RETURNS VARCHAR AS $$
+DECLARE
+    v_subtotal DOUBLE PRECISION;
+    v_resultado VARCHAR;
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM proyecto.facturas WHERE id = p_factura_id) THEN
+        RAISE EXCEPTION 'La factura con % no existe.', p_factura_id;
+    END IF;
+
+    IF p_tipo_descuento = 'POR_PRODUCTO' THEN
+        UPDATE proyecto.detalles_facturas SET descuento = descuento + p_valor_descuento WHERE id_factura = p_factura_id;
+        v_resultado := format('Descuento de % aplicado por producto a la factura %.', p_valor_descuento, p_factura_id);
+    ELSIF p_tipo_descuento = 'TOTAL' THEN
+        UPDATE proyecto.facturas SET descuento_total = descuento_total + p_valor_descuento, total = total - p_valor_descuento WHERE id = p_factura_id;
+        v_resultado := format('Descuento total de % aplicado a la factura %.', p_valor_descuento, p_factura_id);
+    ELSE
+        v_resultado := 'Tipo de descuento no válido.';
+    END IF;
+
+    RETURN v_resultado;
+
+EXCEPTION
+    WHEN foreign_key_violation THEN
+        RETURN 'Factura no válida.';
+END;
+$$ LANGUAGE plpgsql;
+
+--Agregar método de pago a una factura ya creada
+CREATE OR REPLACE FUNCTION proyecto.agregar_metodo_pago_a_factura(p_factura_id INTEGER, p_metodo_pago_id INTEGER)
+RETURNS VARCHAR AS $$
+DECLARE
+    v_resultado VARCHAR;
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM proyecto.facturas WHERE id = p_factura_id) THEN
+        RAISE EXCEPTION 'La factura con % no existe.', p_factura_id;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM proyecto.metodos_pago WHERE id = p_metodo_pago_id) THEN
+        RAISE EXCEPTION 'El método de pago con % no existe.', p_metodo_pago_id;
+    END IF;
+
+    UPDATE proyecto.facturas SET id_metodo_pago = p_metodo_pago_id WHERE id = p_factura_id;
+
+    v_resultado := format('Método de pago % agregado a la factura %.', p_metodo_pago_id, p_factura_id);
+    RETURN v_resultado;
+
+EXCEPTION
+    WHEN foreign_key_violation THEN
+        RETURN 'El método de pago no es válido.';
+    WHEN unique_violation THEN
+        RETURN 'La factura ya tiene este método de pago asignado.';
+END;
+$$ LANGUAGE plpgsql;
+
+
+-- MARTIN -----------------------------------------------------------------
+-- Crear la función que se ejecutará después de insertar en la tabla facturas
+CREATE OR REPLACE FUNCTION proyecto.insertar_xml_facturas()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_descripcion TEXT;
+BEGIN
+    -- Construir la descripción en formato XML con la información requerida
+    SELECT 
+        '<factura>' ||
+        '<factura_id>' || NEW.id || '</factura_id>' ||
+        '<codigo_factura>' || NEW.codigo || '</codigo_factura>' ||
+        '<fecha>' || NEW.fecha || '</fecha>' ||
+        '<subtotal>' || NEW.subtotal || '</subtotal>' ||
+        '<total_impuestos>' || NEW.total_impuestos || '</total_impuestos>' ||
+        '<total>' || NEW.total || '</total>' ||
+        '<estado>' || NEW.estado || '</estado>' ||
+        '<clientes>' ||
+        	'<nombre_cliente>' || c.nombre || '</nombre_cliente>' ||
+        	'<documento_cliente>' || c.documento || '</documento_cliente>' ||
+        	'<direccion_cliente>' || c.direccion || '</direccion_cliente>' ||
+        '</clientes>' ||
+        '<id_metodo_pago>' || NEW.id_metodo_pago || '</id_metodo_pago>' ||
+        '<descripcion_metodo_pago>' || mp.descripcion || '</descripcion_metodo_pago>' ||
+        '<detalles_factura>' ||
+        '</detalles_factura>' ||
+        '</factura>'
+    INTO v_descripcion
+    FROM proyecto.clientes c
+    JOIN proyecto.metodos_pago mp ON mp.id = NEW.id_metodo_pago
+    WHERE c.id = NEW.id_cliente;
+
+    -- Insertar el registro en la tabla xml_facturas
+    INSERT INTO proyecto.xml_facturas (id, id_factura, descripcion)
+    VALUES (nextval('proyecto.seq_xml'), NEW.id, XML_PARSE(CONTENT v_descripcion));
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Crear el trigger que llamará a la función después de insertar en la tabla facturas
+CREATE TRIGGER after_insert_facturas_trigger
+AFTER INSERT ON proyecto.facturas
+FOR EACH ROW
+EXECUTE FUNCTION proyecto.insertar_xml_facturas();
+
+
+-- Crear la función que se ejecutará después de insertar en la tabla detalles_factura
+CREATE OR REPLACE FUNCTION proyecto.insertar_detalle_factura_xml()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_detalles_factura TEXT;
+    v_descripcion TEXT;
+    cur CURSOR FOR
+        SELECT '<detalle>' ||
+               '<nombre_producto>' || dp.nombre_producto || '</nombre_producto>' ||
+               '<id_producto>' || dp.id_producto || '</id_producto>' ||
+               '<cantidad>' || dp.cantidad || '</cantidad>' ||
+               '<valor_total>' || dp.valor_total || '</valor_total>' ||
+               '<descuento>' || dp.descuento || '</descuento>' ||
+               '</detalle>'
+        FROM proyecto.detalles_factura dp
+        WHERE dp.id_factura = NEW.id_factura;
+BEGIN
+    OPEN cur;
+    v_detalles_factura := '';
+    LOOP
+        FETCH cur INTO v_detalles_factura;
+        EXIT WHEN NOT FOUND;
+        v_detalles_factura := v_detalles_factura || v_detalles_factura;
+    END LOOP;
+    CLOSE cur;
+
+    -- Obtener la descripción actual de xml_facturas
+    SELECT descripcion INTO v_descripcion
+    FROM proyecto.xml_facturas
+    WHERE id_factura = NEW.id_factura;
+
+    -- Modificar la descripción para actualizar la sección <detalles_factura>
+    v_descripcion := regexp_replace(v_descripcion, '<detalles_factura>.*</detalles_factura>', '<detalles_factura>' || v_detalles_factura || '</detalles_factura>');
+
+    -- Actualizar la tabla xml_facturas con la nueva descripción
+    UPDATE proyecto.xml_facturas
+    SET descripcion = v_descripcion
+    WHERE id_factura = NEW.id_factura;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Crear el trigger que llamará a la función después de insertar en la tabla detalles_factura
+CREATE TRIGGER after_insert_detalle_factura_trigger
+AFTER INSERT ON proyecto.detalles_factura
+FOR EACH ROW
+EXECUTE FUNCTION proyecto.insertar_detalle_factura_xml();
+
+
+
+CREATE OR REPLACE FUNCTION proyecto.obtener_datos_cliente_xml(p_id_factura INTEGER)
+RETURNS TABLE (nombre_cliente VARCHAR, documento_cliente VARCHAR, direccion_cliente VARCHAR) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        xpath('/factura/clientes/nombre_cliente/text()', xml)::TEXT AS nombre_cliente,
+        xpath('/factura/clientes/documento_cliente/text()', xml)::TEXT AS documento_cliente,
+        xpath('/factura/clientes/direccion_cliente/text()', xml)::TEXT AS direccion_cliente
+    FROM proyecto.xml_facturas
+    WHERE id_factura = p_id_factura;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION proyecto.obtener_detalles_factura_xml(p_id_factura INTEGER)
+RETURNS TABLE (nombre_producto VARCHAR, id_producto INTEGER, cantidad INTEGER, valor_total NUMERIC, descuento NUMERIC) AS $$
+DECLARE
+    cur CURSOR FOR
+        SELECT unnest(xpath('/factura/detalles_factura/detalle/nombre_producto/text()', xml))::TEXT AS nombre_producto,
+               unnest(xpath('/factura/detalles_factura/detalle/id_producto/text()', xml))::INTEGER AS id_producto,
+               unnest(xpath('/factura/detalles_factura/detalle/cantidad/text()', xml))::INTEGER AS cantidad,
+               unnest(xpath('/factura/detalles_factura/detalle/valor_total/text()', xml))::NUMERIC AS valor_total,
+               unnest(xpath('/factura/detalles_factura/detalle/descuento/text()', xml))::NUMERIC AS descuento
+        FROM proyecto.xml_facturas
+        WHERE id_factura = p_id_factura;
+BEGIN
+    OPEN cur;
+    LOOP
+        FETCH cur INTO nombre_producto, id_producto, cantidad, valor_total, descuento;
+        EXIT WHEN NOT FOUND;
+        RETURN NEXT;
+    END LOOP;
+    CLOSE cur;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION proyecto.obtener_total_impuesto(p_id_factura INTEGER)
+RETURNS DOUBLE PRECISION AS $$
+DECLARE
+    v_total_impuesto DOUBLE PRECISION;
+BEGIN
+    SELECT xpath('/factura/total_impuestos/text()', xml)::TEXT::DOUBLE PRECISION
+    INTO v_total_impuesto
+    FROM proyecto.xml_facturas
+    WHERE id_factura = p_id_factura;
+
+    RETURN v_total_impuesto;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION proyecto.obtener_total_descuento(p_id_factura INTEGER)
+RETURNS FLOAT AS $$
+DECLARE
+    v_total_descuento FLOAT;
+BEGIN
+    SELECT SUM((xpath('/factura/detalles_factura/detalle/descuento/text()', xml)::TEXT::FLOAT))
+    INTO v_total_descuento
+    FROM proyecto.xml_facturas
+    WHERE id_factura = p_id_factura;
+
+    RETURN v_total_descuento;
+END;
+$$ LANGUAGE plpgsql;
