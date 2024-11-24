@@ -896,9 +896,9 @@ BEGIN
         '<total>' || NEW.total || '</total>' ||
         '<estado>' || NEW.estado || '</estado>' ||
         '<clientes>' ||
-        	'<nombre_cliente>' || c.nombre || '</nombre_cliente>' ||
-        	'<documento_cliente>' || c.documento || '</documento_cliente>' ||
-        	'<direccion_cliente>' || c.direccion || '</direccion_cliente>' ||
+            '<nombre_cliente>' || c.nombre || '</nombre_cliente>' ||
+            '<documento_cliente>' || c.documento || '</documento_cliente>' ||
+            '<direccion_cliente>' || c.direccion || '</direccion_cliente>' ||
         '</clientes>' ||
         '<id_metodo_pago>' || NEW.id_metodo_pago || '</id_metodo_pago>' ||
         '<descripcion_metodo_pago>' || mp.descripcion || '</descripcion_metodo_pago>' ||
@@ -912,7 +912,7 @@ BEGIN
 
     -- Insertar el registro en la tabla xml_facturas
     INSERT INTO proyecto.xml_facturas (id, id_factura, descripcion)
-    VALUES (nextval('proyecto.seq_xml'), NEW.id, XML_PARSE(CONTENT v_descripcion));
+    VALUES (nextval('proyecto.seq_xml'), NEW.id, v_descripcion::xml);
 
     RETURN NEW;
 END;
@@ -939,7 +939,7 @@ DECLARE
                '<valor_total>' || dp.valor_total || '</valor_total>' ||
                '<descuento>' || dp.descuento || '</descuento>' ||
                '</detalle>'
-        FROM proyecto.detalles_factura dp
+        FROM proyecto.detalles_facturas dp
         WHERE dp.id_factura = NEW.id_factura;
 BEGIN
     OPEN cur;
@@ -970,7 +970,7 @@ $$ LANGUAGE plpgsql;
 
 -- Crear el trigger que llamará a la función después de insertar en la tabla detalles_factura
 CREATE TRIGGER after_insert_detalle_factura_trigger
-AFTER INSERT ON proyecto.detalles_factura
+AFTER INSERT ON proyecto.detalles_facturas
 FOR EACH ROW
 EXECUTE FUNCTION proyecto.insertar_detalle_factura_xml();
 
