@@ -3,6 +3,10 @@ package main;
 import models.*;
 import org.bson.Document;
 import com.mongodb.client.MongoCollection;
+
+import connection.ConexionMongo;
+import connection.ConexionPostgres;
+
 import java.sql.Connection;
 
 public class Proyecto {

@@ -1,19 +1,23 @@
-
-
-package models;
+package connection;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import io.github.cdimascio.dotenv.Dotenv;
 
 public class ConexionPostgres {
     private static ConexionPostgres instance;
     private Connection connection;
-    private String url = "jdbc:postgresql://localhost:5432/postgres";
-    private String username = "postgres";
-    private String password = "12345678";
+    private String url;
+    private String username;
+    private String password;
 
     private ConexionPostgres(){
+        Dotenv dotenv = Dotenv.load();
+        this.url = dotenv.get("DB_URL");
+        this.username = dotenv.get("DB_USERNAME");
+        this.password = dotenv.get("DB_PASSWORD");
+
         try {
             Class.forName("org.postgresql.Driver");
             this.connection = DriverManager.getConnection(url, username, password);
@@ -30,8 +34,7 @@ public class ConexionPostgres {
     public static ConexionPostgres getInstance() {
         if (instance == null) {
             instance = new ConexionPostgres();
-        } 
-
+        }
         return instance;
     }
 
