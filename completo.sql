@@ -721,6 +721,209 @@ $$ LANGUAGE plpgsql;
 
 -- MAJO ---------------------------------------------------------------------
 
+--CRUD
+--Método de pago
+CREATE OR REPLACE PROCEDURE proyecto.crear_metodo_pago(p_descripcion VARCHAR, p_identificador identificador_metodo_pago)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    INSERT INTO proyecto.metodos_pago (descripcion, identificador) 
+    VALUES (p_descripcion, p_identificador);
+
+    RAISE NOTICE 'Método de pago creado correctamente: %', p_descripcion;
+    
+EXCEPTION
+    WHEN unique_violation THEN
+        RAISE EXCEPTION 'Ya existe un método de pago con ese identificador: %', p_identificador;
+END;
+$$;
+
+
+CREATE OR REPLACE PROCEDURE proyecto.modificar_metodo_pago(p_id INTEGER, p_descripcion VARCHAR, p_identificador identificador_metodo_pago)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    UPDATE proyecto.metodos_pago
+    SET descripcion = p_descripcion,
+        identificador = p_identificador
+    WHERE id = p_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'El método de pago con ID % no existe', p_id;
+    END IF;
+
+    RAISE NOTICE 'Método de pago con ID % actualizado correctamente.', p_id;
+    
+EXCEPTION
+    WHEN unique_violation THEN
+        RAISE EXCEPTION 'Ya existe un método de pago con ese identificador: %', p_identificador;
+END;
+$$;
+
+
+
+CREATE OR REPLACE PROCEDURE proyecto.eliminar_metodo_pago(p_id INTEGER)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    DELETE FROM proyecto.metodos_pago WHERE id = p_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'El método de pago con ID % no existe', p_id;
+    END IF;
+
+    RAISE NOTICE 'Método de pago con ID % eliminado correctamente.', p_id;
+END;
+$$;
+
+--Factura
+CREATE OR REPLACE PROCEDURE proyecto.crear_factura(
+    p_codigo VARCHAR, 
+    p_fecha DATE, 
+    p_subtotal DOUBLE PRECISION, 
+    p_total_impuestos DOUBLE PRECISION, 
+    p_total DOUBLE PRECISION, 
+    p_estadoF estado_factura, 
+    p_id_cliente INTEGER, 
+    p_id_metodo_pago INTEGER)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    INSERT INTO proyecto.facturas (codigo, fecha, subtotal, total_impuestos, total, estadoF, id_cliente, id_metodo_pago) 
+    VALUES (p_codigo, p_fecha, p_subtotal, p_total_impuestos, p_total, p_estadoF, p_id_cliente, p_id_metodo_pago);
+
+    RAISE NOTICE 'Factura con código % creada correctamente.', p_codigo;
+    
+EXCEPTION
+    WHEN foreign_key_violation THEN
+        RAISE EXCEPTION 'La categoría, cliente o método de pago no existen';
+    WHEN unique_violation THEN
+        RAISE EXCEPTION 'Ya existe una factura con ese código: %', p_codigo;
+END;
+$$;
+
+
+CREATE OR REPLACE PROCEDURE proyecto.modificar_factura(
+    p_id INTEGER, 
+    p_codigo VARCHAR, 
+    p_fecha DATE, 
+    p_subtotal DOUBLE PRECISION, 
+    p_total_impuestos DOUBLE PRECISION, 
+    p_total DOUBLE PRECISION, 
+    p_estadoF estado_factura, 
+    p_id_cliente INTEGER, 
+    p_id_metodo_pago INTEGER)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    UPDATE proyecto.facturas
+    SET codigo = p_codigo,
+        fecha = p_fecha,
+        subtotal = p_subtotal,
+        total_impuestos = p_total_impuestos,
+        total = p_total,
+        estadoF = p_estadoF,
+        id_cliente = p_id_cliente,
+        id_metodo_pago = p_id_metodo_pago
+    WHERE id = p_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Factura % no encontrada.', p_id;
+    END IF;
+
+    RAISE NOTICE 'Factura % modificada correctamente.', p_id;
+    
+EXCEPTION
+    WHEN foreign_key_violation THEN
+        RAISE EXCEPTION 'La categoría, cliente o método de pago no existen';
+END;
+$$;
+
+
+CREATE OR REPLACE PROCEDURE proyecto.eliminar_factura(p_id INTEGER)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    DELETE FROM proyecto.facturas WHERE id = p_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Factura % no encontrada.', p_id;
+    END IF;
+
+    RAISE NOTICE 'Factura   % eliminada correctamente.', p_id;
+END;
+$$;
+
+--Detalles Factura
+CREATE OR REPLACE PROCEDURE proyecto.crear_detalle_factura(
+    p_cantidad INTEGER, 
+    p_valor_total DOUBLE PRECISION, 
+    p_descuento FLOAT, 
+    p_producto_id INTEGER, 
+    p_factura_id INTEGER)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    INSERT INTO proyecto.detalles_facturas (cantidad, valor_total, descuento, producto_id, factura_id) 
+    VALUES (p_cantidad, p_valor_total, p_descuento, p_producto_id, p_factura_id);
+
+    RAISE NOTICE 'Detalle de factura creado correctamente para la factura con ID %', p_factura_id;
+    
+EXCEPTION
+    WHEN foreign_key_violation THEN
+        RAISE EXCEPTION 'El producto o la factura no existen';
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE proyecto.modificar_detalle_factura(
+    p_id INTEGER, 
+    p_cantidad INTEGER, 
+    p_valor_total DOUBLE PRECISION, 
+    p_descuento FLOAT, 
+    p_producto_id INTEGER, 
+    p_factura_id INTEGER)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    UPDATE proyecto.detalles_facturas
+    SET cantidad = p_cantidad,
+        valor_total = p_valor_total,
+        descuento = p_descuento,
+        producto_id = p_producto_id,
+        factura_id = p_factura_id
+    WHERE id = p_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Detalle de factura  % no encontrado.', p_id;
+    END IF;
+
+    RAISE NOTICE 'Detalle de factura % modificado correctamente.', p_id;
+    
+EXCEPTION
+    WHEN foreign_key_violation THEN
+        RAISE EXCEPTION 'El producto o la factura no existen';
+END;
+$$;
+
+
+
+CREATE OR REPLACE PROCEDURE proyecto.eliminar_detalle_factura(p_id INTEGER)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    DELETE FROM proyecto.detalles_facturas WHERE id = p_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Detalle de factura  % no encontrado.', p_id;
+    END IF;
+
+    RAISE NOTICE 'Detalle de factura % eliminado correctamente.', p_id;
+END;
+$$;
+
+
+--FUNCIONALIDADES
+
 CREATE OR REPLACE FUNCTION proyecto.agregar_cliente_a_factura(p_factura_id INT, p_cliente_id INT)
 RETURNS VARCHAR AS $$
 DECLARE
@@ -740,6 +943,7 @@ EXCEPTION
         RETURN 'Verifique que el cliente y la factura existan.';
 END;
 $$ LANGUAGE plpgsql;
+
 
 --Agregar productos al detalle de la factura
 CREATE OR REPLACE FUNCTION proyecto.agregar_producto_a_detalle_factura(p_factura_id INTEGER, p_producto_id INTEGER, p_cantidad INTEGER)
@@ -770,7 +974,6 @@ EXCEPTION
         RETURN 'Cantidad o precio inválido.';
 END;
 $$ LANGUAGE plpgsql;
-
 
 --Calcular impuestos de los productos
 CREATE OR REPLACE FUNCTION proyecto.calcular_impuestos_factura(p_factura_id INTEGER)
@@ -849,6 +1052,7 @@ EXCEPTION
         RETURN 'Factura no válida.';
 END;
 $$ LANGUAGE plpgsql;
+
 
 --Agregar método de pago a una factura ya creada
 CREATE OR REPLACE FUNCTION proyecto.agregar_metodo_pago_a_factura(p_factura_id INTEGER, p_metodo_pago_id INTEGER)
