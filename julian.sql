@@ -415,3 +415,73 @@ END;
 $$ LANGUAGE plpgsql;
 
 SELECT * FROM proyecto.consultar_auditorias('2024-02-02', 'Juan', 'Agua');
+
+-- Funcion validar id producto cuando se actualice el inventario
+CREATE OR REPLACE FUNCTION proyecto.validar_inventario_actualizado()
+RETURNS TRIGGER AS $$
+DECLARE
+    producto_existente BOOLEAN;
+BEGIN
+    -- Verificar si el id_producto es menor o igual a 0
+    IF NEW.id_producto <= 0 THEN
+        RAISE EXCEPTION 'El id_producto % no es válido. Debe ser mayor que 0.', NEW.id_producto;
+    END IF;
+
+    -- Verificar si el id_producto existe en la tabla productos
+    SELECT EXISTS (SELECT 1 FROM proyecto.productos WHERE id = NEW.id_producto)
+    INTO producto_existente;
+
+    IF NOT producto_existente THEN
+        RAISE EXCEPTION 'El id_producto % no existe en la tabla productos.', NEW.id_producto;
+    END IF;
+
+    -- Si pasa las validaciones, se permite la actualización
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger
+CREATE TRIGGER trg_validar_inventario
+AFTER UPDATE ON proyecto.inventarios
+FOR EACH ROW
+EXECUTE FUNCTION proyecto.validar_inventario_actualizado();
+
+-- Función validar cantidad cuanndo se actualice la auditoria
+CREATE OR REPLACE FUNCTION proyecto.validar_cantidad_auditoria()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Validar que la cantidad sea mayor a 0
+    IF NEW.cantidad <= 0 THEN
+        RAISE EXCEPTION 'La cantidad en la auditoría no puede ser menor o igual a 0. Valor proporcionado: %', NEW.cantidad;
+    END IF;
+
+    -- Si pasa la validación, continuar con la operación
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger
+CREATE TRIGGER trg_validar_cantidad_auditoria
+BEFORE UPDATE ON proyecto.auditorias
+FOR EACH ROW
+EXECUTE FUNCTION proyecto.validar_cantidad_auditoria();
+
+-- Validar que el total de la auditoría sea mayor o igual a 0
+CREATE OR REPLACE FUNCTION proyecto.validar_total_auditoria()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Validar que el total sea mayor o igual a 0
+    IF NEW.total < 0 THEN
+        RAISE EXCEPTION 'El total de la auditoría no puede ser menor a 0. Valor proporcionado: %', NEW.total;
+    END IF;
+
+    -- Si pasa la validación, continuar con la operación
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger
+CREATE TRIGGER trg_validar_total_auditoria
+BEFORE UPDATE ON proyecto.auditorias
+FOR EACH ROW
+EXECUTE FUNCTION proyecto.validar_total_auditoria();
