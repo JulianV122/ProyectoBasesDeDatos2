@@ -15,7 +15,7 @@ public class Proyecto {
         Scanner scanner = new Scanner(System.in);
         Connection connection = ConexionPostgres.getConnection();
         MongoCollection<Document> collection = ConexionMongo.getCollection();
-        Builder.buildAll(connection);
+        
         int mainOption;
 
         do {
@@ -32,6 +32,7 @@ public class Proyecto {
             System.out.println("10. Exportar Informes");
             System.out.println("11. Facturas XML");
             System.out.println("12. Informes");
+            System.out.println("99. Build All");
             System.out.println("0. Salir");
 
             System.out.print("Seleccione una opción: ");
@@ -74,6 +75,9 @@ public class Proyecto {
                     break;
                 case 12:
                     Informe.menuInformes(scanner, connection);
+                    break;
+                case 99:
+                    Builder.buildAll(connection);
                     break;
                 case 0:
                     System.out.println("Saliendo del sistema...");

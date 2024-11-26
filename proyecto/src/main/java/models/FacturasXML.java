@@ -4,44 +4,56 @@ import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Scanner;
 
 public class FacturasXML {
 
-    public static String obtenerDatosClienteXML(Connection connection, int facturaId) {
-        String sql = "SELECT proyecto.obtener_datos_cliente_xml(?)";
+    public static void obtenerDatosClienteXML(Connection connection, int facturaId) {
+        String sql = "SELECT * FROM proyecto.obtener_datos_cliente_xml(?)";
         try {
             CallableStatement stmt = connection.prepareCall(sql);
             stmt.setInt(1, facturaId);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
-                String result = rs.getString(1);
-                rs.close();
-                stmt.close();
-                return result;
+                String nombre_cliente = rs.getString("nombre_cliente");
+                String documento_cliente = rs.getString("documento_cliente");
+                String direccion_cliente = rs.getString("direccion_cliente");
+                System.out.println("Nombre: " + nombre_cliente);
+                System.out.println("Documento: " + documento_cliente);
+                System.out.println("Dirección: " + direccion_cliente);
             }
+            rs.close();
+            stmt.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return null;
     }
 
-    public static String obtenerDetallesFacturaXML(Connection connection, int facturaId) {
-        String sql = "SELECT proyecto.obtener_detalles_factura_xml(?)";
+    public static void obtenerDetallesFacturaXML(Connection connection, int facturaId) {
+        String sql = "SELECT * FROM proyecto.obtener_detalles_factura_xml(?)";
         try {
             CallableStatement stmt = connection.prepareCall(sql);
             stmt.setInt(1, facturaId);
             ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                String result = rs.getString(1);
-                rs.close();
-                stmt.close();
-                return result;
+            while (rs.next()) {
+                String nombre_producto = rs.getString("nombre_producto");
+                String id_producto = rs.getString("id_producto");
+                String cantidad = rs.getString("cantidad");
+                String valor_total = rs.getString("valor_total");
+                String descuento = rs.getString("descuento");
+                System.out.println("Nombre Producto: " + nombre_producto);
+                System.out.println("ID Producto: " + id_producto);
+                System.out.println("Cantidad: " + cantidad);
+                System.out.println("Valor Total: " + valor_total);
+                System.out.println("Descuento: " + descuento);
+                System.out.println("-------------------------------");
             }
+            rs.close();
+            stmt.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return null;
     }
 
     public static String obtenerTotalDescuento(Connection connection, int facturaId) {
@@ -79,12 +91,12 @@ public class FacturasXML {
                 case 1:
                     System.out.print("Ingrese el id de la factura: ");
                     int facturaId = scanner.nextInt();
-                    System.out.println(obtenerDatosClienteXML(connection, facturaId));
+                    obtenerDatosClienteXML(connection, facturaId);
                     break;
                 case 2:
                     System.out.print("Ingrese el id de la factura: ");
                     int facturaId2 = scanner.nextInt();
-                    System.out.println(obtenerDetallesFacturaXML(connection, facturaId2));
+                    obtenerDetallesFacturaXML(connection, facturaId2);
                     break;
                 case 3:
                     System.out.print("Ingrese el id de la factura: ");

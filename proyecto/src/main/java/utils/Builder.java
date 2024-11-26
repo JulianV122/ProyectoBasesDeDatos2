@@ -7,6 +7,7 @@ import models.Factura;
 import models.Categoria;
 import models.Clientes;
 import models.Impuesto;
+import models.MetodoPago;
 import models.Producto;
 
 public class Builder {
@@ -40,7 +41,7 @@ public class Builder {
         }
     }
     public static void buildFactura(Connection connection) {
-        String codigo = "F001";
+        String codigo = "F002";
         Date fecha = new Date(System.currentTimeMillis());
         double subtotal = 5000.0;
         double totalImpuestos = 950.0;
@@ -78,12 +79,21 @@ public class Builder {
             Impuesto.agregarImpuesto(connection, nombres[i], porcentajes[i]);
         }
     }
+    public static void buildMetodosPago(Connection connection) {
+        String[] nombres = {"Efectivo", "Tarjeta de Crédito", "Tarjeta de Débito"};
+        String[] identificadores = {"EFECTIVO", "TC", "TD"};
+
+        for (int i = 0; i < 3; i++) {
+            MetodoPago.agregarMetodoPago(connection, nombres[i], identificadores[i]);
+        }
+    }
 
     public static void buildAll(Connection connection) {
         buildImpuestos(connection);
         buildCategorias(connection);
         buildProductos(connection);
         buildClientes(connection);
+        buildMetodosPago(connection);
         buildFactura(connection);
     }
 }

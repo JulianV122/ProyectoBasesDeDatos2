@@ -10,15 +10,15 @@ CREATE SEQUENCE proyecto.seq_productos
 	START WITH 1000
 	INCREMENT BY 3;
 
-CREATE SEQUENCE factura_ids
+CREATE SEQUENCE proyecto.factura_ids
 	START WITH 1
 	INCREMENT BY 1;
 
-CREATE SEQUENCE id_detalles_facturas
+CREATE SEQUENCE proyecto.id_detalles_facturas
 	START WITH 1
 	INCREMENT BY 1;
 
-CREATE SEQUENCE id_metodos_pago
+CREATE SEQUENCE proyecto.id_metodos_pago
 	START WITH 1
 	INCREMENT BY 1;
 
@@ -44,9 +44,9 @@ CREATE SEQUENCE proyecto.seq_xml
 
 CREATE TYPE proyecto.tipos_movimiento AS ENUM ('ENTRADA','SALIDA'); 
 
-CREATE TYPE estado_factura AS ENUM ('PAGADA', 'PENDIENTE', 'EN PROCESO');
+CREATE TYPE proyecto.estado_factura AS ENUM ('PAGADA', 'PENDIENTE', 'EN PROCESO');
 
-CREATE TYPE identificador_metodo_pago AS ENUM ('EFECTIVO', 'TC', 'TD');
+CREATE TYPE proyecto.identificador_metodo_pago AS ENUM ('EFECTIVO', 'TC', 'TD');
 
 
 CREATE TABLE proyecto.categorias (
@@ -93,7 +93,7 @@ CREATE TABLE proyecto.clientes(
 CREATE TABLE proyecto.inventarios(
 	id serial NOT NULL PRIMARY KEY,
 	fecha date NOT NULL,
-	tipo_movimiento tipos_movimiento NOT NULL,
+	tipo_movimiento proyecto.tipos_movimiento NOT NULL,
 	observaciones varchar(80) NULL,
 	id_producto integer NOT NULL,
 	FOREIGN KEY (id_producto) REFERENCES proyecto.productos(id) ON DELETE CASCADE ON UPDATE CASCADE
@@ -119,7 +119,7 @@ CREATE TABLE proyecto.auditorias(
 CREATE TABLE proyecto.metodos_pago (
 	id serial NOT NULL,
 	descripcion varchar NULL,
-	identificador identificador_metodo_pago  NULL,
+	identificador proyecto.identificador_metodo_pago  NULL,
 	CONSTRAINT metodos_pago_pk PRIMARY KEY (id)
 );
 
@@ -130,7 +130,7 @@ CREATE TABLE proyecto.facturas (
 	subtotal double precision NULL,
 	total_impuestos double precision NULL,
 	total double precision NULL,
-	estadoF estado_factura NULL,
+	estadoF proyecto.estado_factura NULL,
 	id_cliente serial NOT NULL,
 	id_metodo_pago serial NOT NULL,
 	CONSTRAINT facturas_pk PRIMARY KEY (id),	
@@ -177,7 +177,7 @@ CREATE TABLE proyecto.xml_facturas (
 -- INSERT INTO proyecto.impuestos (id, nombre, porcentaje) VALUES (nextval('seq_impuestos'), 'IMPOCONSUMO 2', 0.2);
 -- INSERT INTO proyecto.productos (id, codigo, nombre, descripcion, precio_venta, medida, impuesto_id, categoria_id, stock) VALUES (nextval('seq_productos'), '0002', 'Producto 2', 'Descripción producto 2', 7900, 'KILOGRAMOS', 1, 1, 20);
 -- INSERT INTO proyecto.clientes (id, numero_documento, nombre, direccion, telefono, email, ciudad, departamento) VALUES (nextval('seq_clientes'), '1234567891', 'Pedro Perez', 'Calle 124', '1234568', 'pedro@gmail.com', 'Bogota', 'Cundinamarca');
-INSERT INTO proyecto.metodos_pago (id, descripcion, identificador) VALUES (nextval('id_metodos_pago'), 'Tarjeta de crédito', 'TC');
+-- INSERT INTO proyecto.metodos_pago (id, descripcion, identificador) VALUES (nextval('id_metodos_pago'), 'Tarjeta de crédito', 'TC');
 -- INSERT INTO proyecto.facturas (id, codigo, fecha, subtotal, total_impuestos, total, estadoF, id_cliente, id_metodo_pago) VALUES (nextval('factura_ids'), '0002', '2021-10-02', 20000, 2000, 22000, 'PENDIENTE', 4, 4);
 -- INSERT INTO proyecto.detalles_facturas (id, cantidad, valor_total, descuento, producto_id, factura_id) VALUES (nextval('id_detalles_facturas'), 3, 30000, 0, 1000, 6);
 -- INSERT INTO proyecto.inventarios (id, fecha, tipo_movimiento, observaciones, id_producto) VALUES (nextval('seq_inventarios'), '2021-10-02', 'SALIDA', 'Salida de productos', 1000);
@@ -436,7 +436,7 @@ $$;
 
 --CRUD Inventarios--
 --Crear inventario--
-CREATE OR REPLACE PROCEDURE proyecto.crear_inventario(p_fecha date, p_tipo_movimiento tipos_movimiento, p_observaciones varchar, p_id_producto int)
+CREATE OR REPLACE PROCEDURE proyecto.crear_inventario(p_fecha date, p_tipo_movimiento proyecto.tipos_movimiento, p_observaciones varchar, p_id_producto int)
 LANGUAGE plpgsql
 AS $$
 BEGIN
@@ -450,7 +450,7 @@ $$;
 
 
 --Editar inventario--
-CREATE OR REPLACE PROCEDURE proyecto.editar_inventario(p_id int,p_fecha date, p_tipo_movimiento tipos_movimiento, p_observaciones varchar, p_id_producto int)
+CREATE OR REPLACE PROCEDURE proyecto.editar_inventario(p_id int,p_fecha date, p_tipo_movimiento proyecto.tipos_movimiento, p_observaciones varchar, p_id_producto int)
 LANGUAGE plpgsql
 AS $$
 BEGIN
@@ -598,7 +598,7 @@ BEGIN
 
     -- Insertar el informe en la tabla 'proyecto.informes'
     INSERT INTO proyecto.informes (id,tipo_informe, fecha, datos_json)
-    VALUES (nextval('seq_informes'),'Top 10 productos más vendidos', CURRENT_DATE, datos_json);
+    VALUES (nextval('proyecto.seq_informes'),'Top 10 productos más vendidos', CURRENT_DATE, datos_json);
 
     -- Confirmar inserción (opcional para logging)
     RAISE NOTICE 'Informe Top 10 insertado con éxito en la fecha %', CURRENT_DATE;
@@ -686,7 +686,7 @@ BEGIN
 
     total := NEW.cantidad * (NEW.valor_total / NULLIF(NEW.cantidad, 0)); 
 
-    INSERT INTO proyecto.auditorias (id,fecha, nombre_cliente, cantidad, nombre_producto, total) VALUES (nextval('seq_auditorias'),CURRENT_DATE, nombre_cliente, NEW.cantidad, nombre_producto, total);
+    INSERT INTO proyecto.auditorias (id,fecha, nombre_cliente, cantidad, nombre_producto, total) VALUES (nextval('proyecto.seq_auditorias'),CURRENT_DATE, nombre_cliente, NEW.cantidad, nombre_producto, total);
 
     RETURN NEW;
 END;
@@ -723,12 +723,12 @@ $$ LANGUAGE plpgsql;
 
 --CRUD
 --Método de pago
-CREATE OR REPLACE PROCEDURE proyecto.crear_metodo_pago(p_descripcion VARCHAR, p_identificador identificador_metodo_pago)
+CREATE OR REPLACE PROCEDURE proyecto.crear_metodo_pago(p_descripcion VARCHAR, p_identificador VARCHAR)
 LANGUAGE plpgsql
 AS $$
 BEGIN
     INSERT INTO proyecto.metodos_pago (descripcion, identificador) 
-    VALUES (p_descripcion, p_identificador);
+    VALUES (p_descripcion, p_identificador::proyecto.identificador_metodo_pago);
 
     RAISE NOTICE 'Método de pago creado correctamente: %', p_descripcion;
     
@@ -739,13 +739,13 @@ END;
 $$;
 
 
-CREATE OR REPLACE PROCEDURE proyecto.modificar_metodo_pago(p_id INTEGER, p_descripcion VARCHAR, p_identificador identificador_metodo_pago)
+CREATE OR REPLACE PROCEDURE proyecto.modificar_metodo_pago(p_id INTEGER, p_descripcion VARCHAR, p_identificador VARCHAR)
 LANGUAGE plpgsql
 AS $$
 BEGIN
     UPDATE proyecto.metodos_pago
     SET descripcion = p_descripcion,
-        identificador = p_identificador
+        identificador = p_identificador::proyecto.identificador_metodo_pago
     WHERE id = p_id;
 
     IF NOT FOUND THEN
@@ -810,7 +810,7 @@ CREATE OR REPLACE PROCEDURE proyecto.modificar_factura(
     p_subtotal DOUBLE PRECISION, 
     p_total_impuestos DOUBLE PRECISION, 
     p_total DOUBLE PRECISION, 
-    p_estadoF estado_factura, 
+    p_estadoF proyecto.estado_factura, 
     p_id_cliente INTEGER, 
     p_id_metodo_pago INTEGER)
 LANGUAGE plpgsql
@@ -964,13 +964,13 @@ BEGIN
     INSERT INTO proyecto.detalles_facturas (cantidad, valor_total, descuento, producto_id, factura_id)
     VALUES (p_cantidad, p_cantidad * v_precio_producto, 0, p_producto_id, p_factura_id);
 
-    v_resultado := format('Producto % agregado a la factura % con cantidad %.', p_producto_id, p_factura_id, p_cantidad);
+    v_resultado := format('Producto %s agregado a la factura %s con cantidad %s.', p_producto_id::text, p_factura_id::text, p_cantidad::text);
     RETURN v_resultado;
 
 EXCEPTION
     WHEN foreign_key_violation THEN
         RETURN 'Verifique que el producto y la factura existan.';
-    WHEN data_exception THEN
+	WHEN data_exception THEN
         RETURN 'Cantidad o precio inválido.';
 END;
 $$ LANGUAGE plpgsql;
@@ -1098,6 +1098,12 @@ BEGIN
         '<subtotal>' || NEW.subtotal || '</subtotal>' ||
         '<total_impuestos>' || NEW.total_impuestos || '</total_impuestos>' ||
         '<total>' || NEW.total || '</total>' ||
+        '<cliente>' ||
+        '<id_cliente>' || NEW.id_cliente || '</id_cliente>' ||
+        '<nombre_cliente>' || c.nombre || '</nombre_cliente>' ||
+        '<documento_cliente>' || c.numero_documento || '</documento_cliente>' ||
+        '<direccion_cliente>' || c.direccion || '</direccion_cliente>' ||
+        '</cliente>' ||
         '<estado>' || NEW.estadoF || '</estado>' ||
         '<id_metodo_pago>' || NEW.id_metodo_pago || '</id_metodo_pago>' ||
         '<descripcion_metodo_pago>' || mp.descripcion || '</descripcion_metodo_pago>' ||
@@ -1128,8 +1134,9 @@ EXECUTE FUNCTION proyecto.insertar_xml_facturas();
 CREATE OR REPLACE FUNCTION proyecto.insertar_detalle_factura_xml()
 RETURNS TRIGGER AS $$
 DECLARE
-    v_detalles_factura TEXT;
+    v_detalles_factura TEXT := '';
     v_descripcion TEXT;
+    detalle TEXT;
     cur CURSOR FOR
         SELECT '<detalle>' ||
                '<nombre_producto>' || pr.nombre || '</nombre_producto>' ||
@@ -1143,11 +1150,10 @@ DECLARE
         WHERE dp.factura_id = NEW.factura_id;
 BEGIN
     OPEN cur;
-    v_detalles_factura := '';
     LOOP
-        FETCH cur INTO v_detalles_factura;
+        FETCH cur INTO detalle;
         EXIT WHEN NOT FOUND;
-        v_detalles_factura := v_detalles_factura || v_detalles_factura;
+        v_detalles_factura := v_detalles_factura || detalle;
     END LOOP;
     CLOSE cur;
 
@@ -1186,9 +1192,9 @@ RETURNS TABLE (nombre_cliente VARCHAR, documento_cliente VARCHAR, direccion_clie
 BEGIN
     RETURN QUERY
     SELECT
-        xpath('/factura/clientes/nombre_cliente/text()', xml)::TEXT AS nombre_cliente,
-        xpath('/factura/clientes/documento_cliente/text()', xml)::TEXT AS documento_cliente,
-        xpath('/factura/clientes/direccion_cliente/text()', xml)::TEXT AS direccion_cliente
+        xpath('/factura/clientes/nombre_cliente/text()', descripcion)::VARCHAR AS nombre_cliente,
+        xpath('/factura/clientes/documento_cliente/text()', descripcion)::VARCHAR AS documento_cliente,
+        xpath('/factura/clientes/direccion_cliente/text()', descripcion)::VARCHAR AS direccion_cliente
     FROM proyecto.xml_facturas
     WHERE factura_id = p_factura_id;
 END;
@@ -1198,11 +1204,11 @@ CREATE OR REPLACE FUNCTION proyecto.obtener_detalles_factura_xml(p_factura_id IN
 RETURNS TABLE (nombre_producto VARCHAR, id_producto INTEGER, cantidad INTEGER, valor_total NUMERIC, descuento NUMERIC) AS $$
 DECLARE
     cur CURSOR FOR
-        SELECT unnest(xpath('/factura/detalles_factura/detalle/nombre_producto/text()', xml))::TEXT AS nombre_producto,
-               unnest(xpath('/factura/detalles_factura/detalle/id_producto/text()', xml))::INTEGER AS id_producto,
-               unnest(xpath('/factura/detalles_factura/detalle/cantidad/text()', xml))::INTEGER AS cantidad,
-               unnest(xpath('/factura/detalles_factura/detalle/valor_total/text()', xml))::NUMERIC AS valor_total,
-               unnest(xpath('/factura/detalles_factura/detalle/descuento/text()', xml))::NUMERIC AS descuento
+        SELECT unnest(xpath('/factura/detalles_factura/detalle/nombre_producto/text()', descripcion))::VARCHAR AS nombre_producto,
+               unnest(xpath('/factura/detalles_factura/detalle/id_producto/text()', descripcion))::INTEGER AS id_producto,
+               unnest(xpath('/factura/detalles_factura/detalle/cantidad/text()', descripcion))::INTEGER AS cantidad,
+               unnest(xpath('/factura/detalles_factura/detalle/valor_total/text()', descripcion))::NUMERIC AS valor_total,
+               unnest(xpath('/factura/detalles_factura/detalle/descuento/text()', descripcion))::NUMERIC AS descuento
         FROM proyecto.xml_facturas
         WHERE factura_id = p_factura_id;
 BEGIN
@@ -1221,7 +1227,7 @@ RETURNS DOUBLE PRECISION AS $$
 DECLARE
     v_total_impuesto DOUBLE PRECISION;
 BEGIN
-    SELECT xpath('/factura/total_impuestos/text()', xml)::TEXT::DOUBLE PRECISION
+    SELECT xpath('/factura/total_impuestos/text()', descripcion)::TEXT::DOUBLE PRECISION
     INTO v_total_impuesto
     FROM proyecto.xml_facturas
     WHERE factura_id = p_factura_id;
@@ -1235,7 +1241,7 @@ RETURNS FLOAT AS $$
 DECLARE
     v_total_descuento FLOAT;
 BEGIN
-    SELECT SUM((xpath('/factura/detalles_factura/detalle/descuento/text()', xml)::TEXT::FLOAT))
+    SELECT SUM((xpath('/factura/detalles_factura/detalle/descuento/text()', descripcion)::TEXT::FLOAT))
     INTO v_total_descuento
     FROM proyecto.xml_facturas
     WHERE factura_id = p_factura_id;
