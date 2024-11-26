@@ -1,7 +1,9 @@
 package utils;
 
 import java.sql.Connection;
+import java.sql.Date;
 
+import models.Factura;
 import models.Categoria;
 import models.Clientes;
 import models.Impuesto;
@@ -37,6 +39,26 @@ public class Builder {
             Producto.agregarProducto(connection, codigos[i], nombres[i], descripciones[i], precios[i], medidas[i], impuestos[i], categorias[i], stocks[i]);
         }
     }
+    public static void buildFactura(Connection connection) {
+        String codigo = "F001";
+        Date fecha = new Date(System.currentTimeMillis());
+        double subtotal = 5000.0;
+        double totalImpuestos = 950.0;
+        double total = 5950.0;
+        String estadoF = "PAGADA";
+        int idCliente = 1;
+        int idMetodoPago = 1;
+
+        if (Factura.agregarFactura(connection, codigo, fecha, subtotal, totalImpuestos, total, estadoF, idCliente, idMetodoPago)) {
+            int facturaId = Factura.obtenerUltimaFacturaId(connection);
+            int[] productoIds = {1000, 1003, 1006, 1009, 1012};
+            int[] cantidades = {1, 2, 3, 4, 5};
+            System.out.println(facturaId);
+            for (int i = 0; i < productoIds.length; i++) {
+                Factura.agregarProductoADetalleFactura(connection, facturaId, productoIds[i], cantidades[i]);
+            }
+        }
+    }
 
     public static void buildCategorias(Connection connection) {
         String[] descripciones = {"Categoria 1", "Categoria 2", "Categoria 3", "Categoria 4", "Categoria 5", "Categoria 6", "Categoria 7", "Categoria 8", "Categoria 9", "Categoria 10"};
@@ -45,6 +67,8 @@ public class Builder {
             Categoria.agregarCategoria(connection, descripciones[i]);
         }
     }
+
+    
 
     public static void buildImpuestos(Connection connection) {
         String[] nombres = {"IVA", "Renta", "ICA", "Predial", "Consumo", "Ambiental", "Timbre", "Vehicular", "Turismo", "Seguridad"};
@@ -60,5 +84,6 @@ public class Builder {
         buildCategorias(connection);
         buildProductos(connection);
         buildClientes(connection);
+        buildFactura(connection);
     }
 }

@@ -1,6 +1,7 @@
 --ENTIDADES
 CREATE TYPE estado_factura AS ENUM ('PAGADA', 'PENDIENTE', 'EN PROCESO');
 
+
 CREATE TYPE identificador_metodo_pago AS ENUM ('EFECTIVO', 'TC', 'TD');
 
 CREATE SEQUENCE id_facturas
@@ -127,13 +128,13 @@ $$;
 CALL proyecto.eliminar_metodo_pago(1);
 
 --Factura
-CREATE OR REPLACE PROCEDURE proyecto.crear_factura(
+CREATE OR REPLACE PROCEDURE proyecto.agregar_factura(
     p_codigo VARCHAR, 
     p_fecha DATE, 
     p_subtotal DOUBLE PRECISION, 
     p_total_impuestos DOUBLE PRECISION, 
     p_total DOUBLE PRECISION, 
-    p_estadoF estado_factura, 
+    p_estadoF VARCHAR, 
     p_id_cliente INTEGER, 
     p_id_metodo_pago INTEGER)
 LANGUAGE plpgsql
@@ -152,7 +153,7 @@ EXCEPTION
 END;
 $$;
 
-CALL proyecto.crear_factura('FAC001', '2024-11-24', 1000.0, 200.0, 1200.0, 'PENDIENTE', 1, 1);
+CALL proyecto.agregar_factura('FAC001', '2024-11-24', 1000.0, 200.0, 1200.0, 'PENDIENTE', 1, 1);
 
 
 CREATE OR REPLACE PROCEDURE proyecto.modificar_factura(

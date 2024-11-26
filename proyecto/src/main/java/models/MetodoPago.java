@@ -3,6 +3,7 @@ package models;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Scanner;
 
 public class MetodoPago {
 
@@ -53,4 +54,51 @@ public class MetodoPago {
             return false;                         
         }
     }
+
+    public static void menuMetodosPago(Scanner scanner, Connection connection) {
+        int option;
+        do {
+            System.out.println("\n--- Métodos de Pago ---");
+            System.out.println("1. Crear Método de Pago");
+            System.out.println("2. Modificar Método de Pago");
+            System.out.println("3. Eliminar Método de Pago");
+            System.out.println("0. Regresar");
+
+            System.out.print("Seleccione una opción: ");
+            option = scanner.nextInt();
+            scanner.nextLine();
+
+            switch (option) {
+                case 1:
+                    System.out.print("Ingrese la descripción del método de pago: ");
+                    String descripcion = scanner.nextLine();
+                    System.out.print("Ingrese el identificador del método de pago: ");
+                    String identificador = scanner.nextLine();
+                    agregarMetodoPago(connection, descripcion, identificador);
+                    break;
+                case 2:
+                    System.out.print("Ingrese el ID del método de pago a modificar: ");
+                    int idModificar = scanner.nextInt();
+                    scanner.nextLine();
+                    System.out.print("Ingrese la nueva descripción: ");
+                    String nuevaDescripcion = scanner.nextLine();
+                    System.out.print("Ingrese el nuevo identificador: ");
+                    String nuevoIdentificador = scanner.nextLine();
+                    modificarMetodoPago(connection, idModificar, nuevaDescripcion, nuevoIdentificador);
+                    break;
+                case 3:
+                    System.out.print("Ingrese el ID del método de pago a eliminar: ");
+                    int idEliminar = scanner.nextInt();
+                    eliminarMetodoPago(connection, idEliminar);
+                    break;
+                case 0:
+                    System.out.println("Regresando al Menú Principal...");
+                    break;
+                default:
+                    System.out.println("Opción no válida. Intente nuevamente.");
+            }
+        } while (option != 0);
+    }
+
+
 }

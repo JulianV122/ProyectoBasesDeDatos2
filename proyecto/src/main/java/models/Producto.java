@@ -3,6 +3,7 @@ package models;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Scanner;
 import java.sql.ResultSet;
 
 public class Producto {
@@ -86,6 +87,85 @@ public class Producto {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    public static void menuProductos(Scanner scanner, Connection connection) {
+        int option;
+        do {
+            System.out.println("\n--- Productos ---");
+            System.out.println("1. Crear Producto");
+            System.out.println("2. Modificar Producto");
+            System.out.println("3. Eliminar Producto");
+            System.out.println("4. Listar Productos");
+            System.out.println("0. Regresar");
+
+            System.out.print("Seleccione una opción: ");
+            option = scanner.nextInt();
+            scanner.nextLine();
+
+            switch (option) {
+                case 1:
+                    System.out.print("Ingrese el código del producto: ");
+                    String codigo = scanner.nextLine();
+                    System.out.print("Ingrese el nombre del producto: ");
+                    String nombre = scanner.nextLine();
+                    System.out.print("Ingrese la descripción del producto: ");
+                    String descripcion = scanner.nextLine();
+                    System.out.print("Ingrese el precio del producto: ");
+                    float precio = scanner.nextFloat();
+                    scanner.nextLine();
+                    System.out.print("Ingrese la medida del producto: ");
+                    String medida = scanner.nextLine();
+                    System.out.print("Ingrese el ID del impuesto: ");
+                    int impuestoId = scanner.nextInt();
+                    System.out.print("Ingrese el ID de la categoría: ");
+                    int categoriaId = scanner.nextInt();
+                    System.out.print("Ingrese el stock del producto: ");
+                    int stock = scanner.nextInt();
+
+                    agregarProducto(connection, codigo, nombre, descripcion, precio, medida, impuestoId,
+                            categoriaId, stock);
+                    break;
+                case 2:
+                    System.out.print("Ingrese el ID del producto a modificar: ");
+                    int idModificar = scanner.nextInt();
+                    scanner.nextLine();
+                    System.out.print("Ingrese el nuevo código: ");
+                    String nuevoCodigo = scanner.nextLine();
+                    System.out.print("Ingrese el nuevo nombre: ");
+                    String nuevoNombre = scanner.nextLine();
+                    System.out.print("Ingrese la nueva descripción: ");
+                    String nuevaDescripcion = scanner.nextLine();
+                    System.out.print("Ingrese el nuevo precio: ");
+                    float nuevoPrecio = scanner.nextFloat();
+                    scanner.nextLine();
+                    System.out.print("Ingrese la nueva medida: ");
+                    String nuevaMedida = scanner.nextLine();
+                    System.out.print("Ingrese el nuevo ID del impuesto: ");
+                    int nuevoImpuestoId = scanner.nextInt();
+                    System.out.print("Ingrese el nuevo ID de la categoría: ");
+                    int nuevoCategoriaId = scanner.nextInt();
+                    System.out.print("Ingrese el nuevo stock: ");
+                    int nuevoStock = scanner.nextInt();
+
+                    modificarProducto(connection, idModificar, nuevoCodigo, nuevoNombre, nuevaDescripcion,
+                            nuevoPrecio, nuevaMedida, nuevoImpuestoId, nuevoCategoriaId, nuevoStock);
+                    break;
+                case 3:
+                    System.out.print("Ingrese el ID del producto a eliminar: ");
+                    int idEliminar = scanner.nextInt();
+                    eliminarProducto(connection, idEliminar);
+                    break;
+                case 4:
+                    obtenerProductos(connection);
+                    break;
+                case 0:
+                    System.out.println("Regresando al Menú Principal...");
+                    break;
+                default:
+                    System.out.println("Opción no válida. Intente nuevamente.");
+            }
+        } while (option != 0);
     }
 
 }

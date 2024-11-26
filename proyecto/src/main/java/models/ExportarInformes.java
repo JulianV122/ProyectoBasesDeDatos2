@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -28,7 +29,7 @@ import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
 
-public class ExportarInformes{
+public class ExportarInformes {
     // Método para obtener los datos de la tabla informes
     public static List<Map<String, Object>> obtenerInformes(Connection connection) throws SQLException {
         List<Map<String, Object>> informes = new ArrayList<>();
@@ -57,7 +58,7 @@ public class ExportarInformes{
         Sheet sheet = workbook.createSheet("Informes");
 
         // Crear cabeceras
-        String[] headers = {"ID", "Tipo Informe", "Fecha", "Datos JSON"};
+        String[] headers = { "ID", "Tipo Informe", "Fecha", "Datos JSON" };
         Row headerRow = sheet.createRow(0);
         for (int i = 0; i < headers.length; i++) {
             Cell cell = headerRow.createCell(i);
@@ -99,7 +100,8 @@ public class ExportarInformes{
     }
 
     // Método para exportar los datos a un archivo PDF
-    public static void exportarAPDF(List<Map<String, Object>> informes, String nombreArchivo) throws FileNotFoundException, DocumentException {
+    public static void exportarAPDF(List<Map<String, Object>> informes, String nombreArchivo)
+            throws FileNotFoundException, DocumentException {
         // Crear el documento PDF
         Document document = new Document();
         PdfWriter.getInstance(document, new FileOutputStream(nombreArchivo));
@@ -107,14 +109,15 @@ public class ExportarInformes{
         document.open();
 
         // Crear la tabla con un número de columnas igual al número de cabeceras
-        String[] headers = {"ID", "Tipo Informe", "Fecha", "Datos JSON"};
+        String[] headers = { "ID", "Tipo Informe", "Fecha", "Datos JSON" };
         PdfPTable table = new PdfPTable(headers.length);
         table.setWidthPercentage(100); // Usar el 100% del ancho de la página
         table.setSpacingBefore(10f);
         table.setSpacingAfter(10f);
 
         // Crear estilo para las cabeceras
-        com.itextpdf.text.Font boldFont = new com.itextpdf.text.Font(com.itextpdf.text.Font.FontFamily.TIMES_ROMAN, 12, com.itextpdf.text.Font.BOLD);
+        com.itextpdf.text.Font boldFont = new com.itextpdf.text.Font(com.itextpdf.text.Font.FontFamily.TIMES_ROMAN, 12,
+                com.itextpdf.text.Font.BOLD);
 
         // Añadir cabeceras
         for (String header : headers) {
@@ -137,5 +140,54 @@ public class ExportarInformes{
         document.close();
 
         System.out.println("Archivo PDF generado: " + nombreArchivo);
+    }
+
+    public static void menuExportarInformes(Scanner scanner, Connection connection) {
+        int option;
+        do {
+            System.out.println("\n--- Menú Exportar Informes ---");
+            System.out.println("1. Obtener informes");
+            System.out.println("2. Exportar a Excel");
+            System.out.println("3. Exportar a PDF");
+            System.out.println("0. Salir");
+
+            System.out.print("Seleccione una opción: ");
+            option = scanner.nextInt();
+            scanner.nextLine();
+
+            switch (option) {
+                case 1:
+                    try {
+                        List<Map<String, Object>> informes = obtenerInformes(connection);
+                        for (Map<String, Object> informe : informes) {
+                            System.out.println(informe);
+                        }
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }                 
+                    break;
+                case 2:
+                    try {
+                        List<Map<String, Object>> informes = obtenerInformes(connection);
+                        exportarAExcel(informes, "informes.xlsx");
+                    } catch (IOException  | SQLException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                case 3:
+                    try {
+                        List<Map<String, Object>> informes = obtenerInformes(connection);
+                        exportarAPDF(informes, "informes.pdf");
+                    } catch (FileNotFoundException | DocumentException  | SQLException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                case 0:
+                    System.out.println("Regresando al Menú Principal...");
+                    break;
+                default:
+                    System.out.println("Opción no válida. Intente nuevamente.");
+            }
+        } while (option != 0);
     }
 }
