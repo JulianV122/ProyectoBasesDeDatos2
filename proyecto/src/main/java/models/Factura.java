@@ -31,7 +31,7 @@ public class Factura {
         }
     }
 
-    public static boolean modificarFactura(Connection connection, int id, String codigo, java.sql.Date fecha,
+    public static boolean modificarFactura(Connection connection, int id, String codigo, Date fecha,
             double subtotal, double totalImpuestos, double total, String estadoF, int idCliente, int idMetodoPago) {
         String sql = "CALL proyecto.modificar_factura(?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try {
@@ -283,7 +283,7 @@ public class Factura {
                     System.out.print("Ingrese el ID de la factura: ");
                     int idFacturaDesc = scanner.nextInt();
                     scanner.nextLine();
-                    System.out.print("Ingrese el tipo de descuento (PORCENTAJE, VALOR): ");
+                    System.out.print("Ingrese el tipo de descuento (POR PRODUCTO, TOTAL): ");
                     String tipoDescuento = scanner.nextLine();
                     System.out.print("Ingrese el valor del descuento: ");
                     double valorDescuento = scanner.nextDouble();

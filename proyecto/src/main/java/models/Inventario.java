@@ -4,14 +4,15 @@ import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Scanner;
+import java.sql.Date;
 
 public class Inventario {
-    public static boolean agregarInventario(Connection connection, String fecha, String tipoMovimiento,
+    public static boolean agregarInventario(Connection connection, Date fecha, String tipoMovimiento,
             String observaciones, int idProducto) {
         String sql = "CALL proyecto.crear_inventario(?, ?, ?, ?)";
         try {
             CallableStatement stmt = connection.prepareCall(sql);
-            stmt.setString(1, fecha);
+            stmt.setDate(1, fecha);
             stmt.setString(2, tipoMovimiento);
             stmt.setString(3, observaciones);
             stmt.setInt(4, idProducto);
@@ -24,13 +25,13 @@ public class Inventario {
         }
     }
 
-    public static boolean actualizarInventario(Connection connection, int id, String fecha, String tipoMovimiento,
+    public static boolean actualizarInventario(Connection connection, int id, Date fecha, String tipoMovimiento,
             String observaciones, int idProducto) {
         String sql = "CALL proyecto.editar_inventario(?, ?, ?, ?, ?)";
         try {
             CallableStatement stmt = connection.prepareCall(sql);
             stmt.setInt(1, id);
-            stmt.setString(2, fecha);
+            stmt.setDate(2, fecha);
             stmt.setString(3, tipoMovimiento);
             stmt.setString(4, observaciones);
             stmt.setInt(5, idProducto);
@@ -73,7 +74,8 @@ public class Inventario {
             switch (option) {
                 case 1:
                     System.out.print("Ingrese la fecha (YYYY-MM-DD): ");
-                    String fecha = scanner.nextLine();
+                    String fechaStr = scanner.nextLine();
+                    Date fecha = Date.valueOf(fechaStr);
                     System.out.print("Ingrese el tipo de movimiento (ENTRADA o SALIDA): ");
                     String tipoMovimiento = scanner.nextLine();
                     System.out.print("Ingrese las observaciones: ");
@@ -88,7 +90,8 @@ public class Inventario {
                     int idModificar = scanner.nextInt();
                     scanner.nextLine();
                     System.out.print("Ingrese la nueva fecha (YYYY-MM-DD): ");
-                    String nuevaFecha = scanner.nextLine();
+                    String nuevaFechaStr = scanner.nextLine();
+                    Date nuevaFecha = Date.valueOf(nuevaFechaStr);
                     System.out.print("Ingrese el nuevo tipo de movimiento: ");
                     String nuevoTipoMovimiento = scanner.nextLine();
                     System.out.print("Ingrese las nuevas observaciones: ");

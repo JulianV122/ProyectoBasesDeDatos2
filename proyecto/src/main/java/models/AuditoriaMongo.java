@@ -59,11 +59,13 @@ public class AuditoriaMongo {
                     String id = scanner.nextLine();
                     System.out.print("Ingrese la fecha de la auditoría: ");
                     Date fecha = new Date();
+                    scanner.nextLine();
                     System.out.print("Ingrese el nombre del cliente: ");
                     String nombreCliente = scanner.nextLine();
                     System.out.print("Ingrese la cantidad: ");
                     Integer cantidad = scanner.nextInt();
                     System.out.print("Ingrese el producto: ");
+                    scanner.nextLine();
                     String producto = scanner.nextLine();
                     System.out.print("Ingrese el total: ");
                     Double total = scanner.nextDouble();
@@ -77,6 +79,7 @@ public class AuditoriaMongo {
                     System.out.print("Ingrese la cantidad: ");
                     Integer cantidadActualizar = scanner.nextInt();
                     System.out.print("Ingrese el producto: ");
+                    scanner.nextLine();
                     String productoActualizar = scanner.nextLine();
                     System.out.print("Ingrese el total: ");
                     Double totalActualizar = scanner.nextDouble();

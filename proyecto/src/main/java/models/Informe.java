@@ -1,5 +1,6 @@
 package models;
 
+import java.sql.Date;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -8,12 +9,12 @@ import java.util.Scanner;
 
 public class Informe {
 
-    public static boolean crearInforme(Connection connection, String tipoInforme, String fecha, String datosJson) {
-        String sql = "CALL proyecto.crear_informe(?, ?, ?)";
+    public static boolean crearInforme(Connection connection, String tipoInforme, Date fecha, String datosJson) {
+        String sql = "CALL proyecto.crear_informe(?, ?, ?::jsonb)";
         try {
             CallableStatement stmt = connection.prepareCall(sql);
             stmt.setString(1, tipoInforme);
-            stmt.setString(2, fecha);
+            stmt.setDate(2, fecha);
             stmt.setString(3, datosJson);
             stmt.execute();
             stmt.close();
@@ -24,14 +25,14 @@ public class Informe {
         }
     }
 
-    public static boolean editarInforme(Connection connection, int id, String tipoInforme, String fecha,
+    public static boolean editarInforme(Connection connection, int id, String tipoInforme, Date fecha,
             String datosJson) {
-        String sql = "CALL proyecto.editar_informe(?, ?, ?, ?)";
+        String sql = "CALL proyecto.editar_informe(?, ?, ?, ?::jsonb)";
         try {
             CallableStatement stmt = connection.prepareCall(sql);
             stmt.setInt(1, id);
             stmt.setString(2, tipoInforme);
-            stmt.setString(3, fecha);
+            stmt.setDate(3, fecha);
             stmt.setString(4, datosJson);
             stmt.execute();
             stmt.close();
@@ -60,21 +61,34 @@ public class Informe {
         String sql = "SELECT * FROM proyecto.informe_top10()";
         try {
             CallableStatement stmt = connection.prepareCall(sql);
-            return stmt.executeQuery();
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                int productoId = rs.getInt("producto_id");
+                String codigo = rs.getString("codigo");
+                String nombre = rs.getString("nombre");
+                long totalVendido = rs.getLong("total_vendido");
+                int facturaId = rs.getInt("factura_id");
+
+                System.out.println("Producto ID: " + productoId + ", Código: " + codigo + ", Nombre: " + nombre
+                        + ", Total Vendido: " + totalVendido + ", Factura ID: " + facturaId);
+            }
+            return rs;
         } catch (SQLException e) {
             e.printStackTrace();
             return null;
         }
     }
 
-    public static ResultSet insertarInformeTop10(Connection connection) {
-        String sql = "SELECT * FROM proyecto.insertar_informe_top10()";
+    public static boolean insertarInformeTop10(Connection connection) {
+        String sql = "CALL proyecto.insertar_informe_top10()";
         try {
             CallableStatement stmt = connection.prepareCall(sql);
-            return stmt.executeQuery();
+            stmt.execute();
+            stmt.close();
+            return true;
         } catch (SQLException e) {
             e.printStackTrace();
-            return null;
+            return false;
         }
     }
 
@@ -91,10 +105,10 @@ public class Informe {
         }
     }
 
-    public static void menuInformes (Scanner scanner, Connection connection) {
+    public static void menuInformes(Scanner scanner, Connection connection) {
         int option;
         do {
-            System.out.println("\n--- Categorías ---");
+            System.out.println("\n--- Informes ---");
             System.out.println("1. Crear informe");
             System.out.println("2. Modificar informe");
             System.out.println("3. Eliminar informe");
@@ -112,7 +126,8 @@ public class Informe {
                     System.out.print("Ingrese el tipo de informe: ");
                     String tipoInforme = scanner.nextLine();
                     System.out.print("Ingrese la fecha del informe: ");
-                    String fecha = scanner.nextLine();
+                    String fechaStr = scanner.nextLine();
+                    Date fecha = Date.valueOf(fechaStr);
                     System.out.print("Ingrese los datos del informe: ");
                     String datosJson = scanner.nextLine();
 
@@ -125,11 +140,12 @@ public class Informe {
                     System.out.print("Ingrese el tipo de informe: ");
                     String tipoInformeModificar = scanner.nextLine();
                     System.out.print("Ingrese la fecha del informe: ");
-                    String fechaModificar = scanner.nextLine();
+                    String nuevaFechaStr = scanner.nextLine();
+                    Date nuevaFecha = Date.valueOf(nuevaFechaStr);
                     System.out.print("Ingrese los datos del informe: ");
                     String datosJsonModificar = scanner.nextLine();
 
-                    editarInforme(connection, idModificar, tipoInformeModificar, fechaModificar, datosJsonModificar);
+                    editarInforme(connection, idModificar, tipoInformeModificar, nuevaFecha, datosJsonModificar);
                     break;
                 case 3:
                     System.out.print("Ingrese el id del informe a eliminar: ");
@@ -142,34 +158,38 @@ public class Informe {
                     ResultSet informeTop10 = obtenerInformeTop10(connection);
                     try {
                         while (informeTop10.next()) {
-                            System.out.println(informeTop10.getString("id") + " | " + informeTop10.getString("tipo_informe") + " | " + informeTop10.getString("fecha") + " | " + informeTop10.getString("datos_json"));
+                            System.out.println(informeTop10.getInt("producto_id") + " | "
+                                    + informeTop10.getString("codigo") + " | " + informeTop10.getString("nombre") + " | "
+                                    + informeTop10.getLong("total_vendido") + " | " + informeTop10.getInt("factura_id"));
                         }
                     } catch (SQLException e) {
                         e.printStackTrace();
                     }
                     break;
                 case 5:
-                    ResultSet insertarInformeTop10 = insertarInformeTop10(connection);
-                    try {
-                        while (insertarInformeTop10.next()) {
-                            System.out.println(insertarInformeTop10.getString("id") + " | " + insertarInformeTop10.getString("tipo_informe") + " | " + insertarInformeTop10.getString("fecha") + " | " + insertarInformeTop10.getString("datos_json"));
-                        }
-                    } catch (SQLException e) {
-                        e.printStackTrace();
-                    }
+                    insertarInformeTop10(connection);
                     break;
+                
                 case 6:
-                    System.out.print("Ingrese el año: ");
+                    System.out.print("Ingrese el año del informe: ");
                     int anio = scanner.nextInt();
-                    scanner.nextLine();
-                    System.out.print("Ingrese el mes: ");
+                    System.out.print("Ingrese el mes del informe: ");
                     int mes = scanner.nextInt();
                     scanner.nextLine();
 
                     ResultSet informeVentasMensual = obtenerInformeVentasMensual(connection, anio, mes);
                     try {
                         while (informeVentasMensual.next()) {
-                            System.out.println(informeVentasMensual.getString("id") + " | " + informeVentasMensual.getString("tipo_informe") + " | " + informeVentasMensual.getString("fecha") + " | " + informeVentasMensual.getString("datos_json"));
+                            System.out.println(informeVentasMensual.getInt("factura_id") + " | "
+                                    + informeVentasMensual.getString("codigo_factura") + " | "
+                                    + informeVentasMensual.getDate("fecha_factura") + " | "
+                                    + informeVentasMensual.getInt("producto_id") + " | "
+                                    + informeVentasMensual.getString("producto_nombre") + " | "
+                                    + informeVentasMensual.getInt("cantidad_vendida") + " | "
+                                    + informeVentasMensual.getDouble("valor_total_producto") + " | "
+                                    + informeVentasMensual.getDouble("subtotal_mensual") + " | "
+                                    + informeVentasMensual.getDouble("impuestos_mensuales") + " | "
+                                    + informeVentasMensual.getDouble("total_facturado"));
                         }
                     } catch (SQLException e) {
                         e.printStackTrace();

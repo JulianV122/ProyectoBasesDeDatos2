@@ -74,8 +74,10 @@ public class Categoria {
                 case 2:
                     System.out.print("Ingrese el id de la categoría a modificar: ");
                     int idModificarCa = scanner.nextInt();
+                    scanner.nextLine();
                     System.out.print("Ingrese la nueva descripción de la categoría: ");
                     String nuevaDescripcionCa = scanner.nextLine();
+                    
 
                     modificarCategoria(connection, idModificarCa, nuevaDescripcionCa);
                     break;

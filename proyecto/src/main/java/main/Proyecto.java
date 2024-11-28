@@ -8,7 +8,6 @@ import java.sql.Connection;
 import java.util.Scanner;
 import org.bson.Document;
 
-
 public class Proyecto {
 
     public static void main(String[] args) {
@@ -29,9 +28,10 @@ public class Proyecto {
             System.out.println("7. Detalles de Factura");
             System.out.println("8. Impuestos");
             System.out.println("9. Auditoría");
-            System.out.println("10. Exportar Informes");
-            System.out.println("11. Facturas XML");
-            System.out.println("12. Informes");
+            System.out.println("10. Auditoría MongoDB");
+            System.out.println("11. Informes");
+            System.out.println("12. Facturas XML");
+            System.out.println("13. Exportar Informes");
             System.out.println("99. Build All");
             System.out.println("0. Salir");
 
@@ -65,16 +65,18 @@ public class Proyecto {
                     Impuesto.menuImpuestos(scanner, connection);
                     break;
                 case 9:
-                    AuditoriaMongo.menuAuditoria(scanner, collection);
                     break;
                 case 10:
-                    ExportarInformes.menuExportarInformes(scanner, connection);
+                    AuditoriaMongo.menuAuditoria(scanner, collection);
                     break;
-                case 11:                
+                case 11:
+                    Informe.menuInformes(scanner, connection);
+                    break;
+                case 12:                
                     FacturasXML.menuFacturasXML(scanner, connection);
                     break;
-                case 12:
-                    Informe.menuInformes(scanner, connection);
+                case 13:
+                    ExportarInformes.menuExportarInformes(scanner, connection);
                     break;
                 case 99:
                     Builder.buildAll(connection);
