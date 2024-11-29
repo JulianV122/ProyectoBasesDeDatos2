@@ -130,7 +130,11 @@ public class Informe {
                     Date fecha = Date.valueOf(fechaStr);
                     System.out.print("Ingrese los datos del informe: ");
                     String datosJson = scanner.nextLine();
-                    crearInforme(connection, tipoInforme, fecha, datosJson);
+                    if (crearInforme(connection, tipoInforme, fecha, datosJson)) {
+                        System.out.println("Informe creado exitosamente.");
+                    } else {
+                        System.out.println("Error al crear el informe.");
+                    }
                     break;
                 case 2:
                     System.out.print("Ingrese el id del informe a modificar: ");
@@ -144,14 +148,22 @@ public class Informe {
                     System.out.print("Ingrese los datos del informe: ");
                     String datosJsonModificar = scanner.nextLine();
 
-                    editarInforme(connection, idModificar, tipoInformeModificar, nuevaFecha, datosJsonModificar);
+                    if (editarInforme(connection, idModificar, tipoInformeModificar, nuevaFecha, datosJsonModificar)) {
+                        System.out.println("Informe modificado exitosamente.");
+                    } else {
+                        System.out.println("Error al modificar el informe.");
+                    }
                     break;
                 case 3:
                     System.out.print("Ingrese el id del informe a eliminar: ");
                     int idEliminar = scanner.nextInt();
                     scanner.nextLine();
 
-                    eliminarInforme(connection, idEliminar);
+                    if (eliminarInforme(connection, idEliminar)) {
+                        System.out.println("Informe eliminado exitosamente.");
+                    } else {
+                        System.out.println("Error al eliminar el informe.");
+                    }
                     break;
                 case 4:
                     ResultSet informeTop10 = obtenerInformeTop10(connection);

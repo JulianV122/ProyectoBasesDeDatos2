@@ -69,7 +69,11 @@ public class Categoria {
                     System.out.print("Ingrese la descripción de la categoría: ");
                     String descripcionCa = scanner.nextLine();
 
-                    agregarCategoria(connection, descripcionCa);
+                    if (agregarCategoria(connection, descripcionCa)) {
+                        System.out.println("Categoría agregada exitosamente.");
+                    } else {
+                        System.out.println("Ocurrió un error al agregar la categoría.");
+                    }
                     break;
                 case 2:
                     System.out.print("Ingrese el id de la categoría a modificar: ");
@@ -79,13 +83,21 @@ public class Categoria {
                     String nuevaDescripcionCa = scanner.nextLine();
                     
 
-                    modificarCategoria(connection, idModificarCa, nuevaDescripcionCa);
+                    if (modificarCategoria(connection, idModificarCa, nuevaDescripcionCa)) {
+                        System.out.println("Categoría modificada exitosamente.");
+                    } else {
+                        System.out.println("Ocurrió un error al modificar la categoría.");
+                    }
                     break;
                 case 3:
                     System.out.print("Ingrese el id de la categoría a eliminar: ");
                     int idEliminarCa = scanner.nextInt();
 
-                    eliminarCategoria(connection, idEliminarCa);
+                    if (eliminarCategoria(connection, idEliminarCa)) {
+                        System.out.println("Categoría eliminada exitosamente.");
+                    } else {
+                        System.out.println("Ocurrió un error al eliminar la categoría.");
+                    }
                     break;
                 case 0:
                     System.out.println("Regresando al Menú Principal...");

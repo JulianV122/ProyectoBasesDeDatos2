@@ -88,7 +88,11 @@ public class Auditoria {
                     System.out.print("Ingrese el total: ");
                     double total = scanner.nextDouble();
 
-                    crearAuditoria(connection, fecha, nombreCliente, cantidad, nombreProducto, total);
+                    if (crearAuditoria(connection, fecha, nombreCliente, cantidad, nombreProducto, total)) {
+                        System.out.println("Auditoría creada exitosamente.");
+                    } else {
+                        System.out.println("Ocurrió un error al crear la auditoría.");
+                    }
                     break;
                 case 2:
                     System.out.print("Ingrese el id de la auditoría a editar: ");
@@ -107,14 +111,22 @@ public class Auditoria {
                     System.out.print("Ingrese el nuevo total: ");
                     double nuevoTotal = scanner.nextDouble();
 
-                    editarAuditoria(connection, idEditar, NuevaFecha, nuevoNombreCliente, nuevaCantidad,
-                            nuevoNombreProducto, nuevoTotal);
+                    if (editarAuditoria(connection, idEditar, NuevaFecha, nuevoNombreCliente, nuevaCantidad,
+                            nuevoNombreProducto, nuevoTotal)) {
+                        System.out.println("Auditoría editada exitosamente.");
+                    } else {
+                        System.out.println("Ocurrió un error al editar la auditoría.");
+                    }
                     break;
                 case 3:
                     System.out.print("Ingrese el id de la auditoría a eliminar: ");
                     int idEliminar = scanner.nextInt();
 
-                    eliminarAuditoria(connection, idEliminar);
+                    if (eliminarAuditoria(connection, idEliminar)) {
+                        System.out.println("Auditoría eliminada exitosamente.");
+                    } else {
+                        System.out.println("Ocurrió un error al eliminar la auditoría.");
+                    }
                     break;
                 case 0:
                     System.out.println("Regresando al Menú Principal...");

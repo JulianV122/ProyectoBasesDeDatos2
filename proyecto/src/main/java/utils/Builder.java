@@ -62,14 +62,11 @@ public class Builder {
     public static void buildFactura(Connection connection) {
         String codigo = "F002";
         Date fecha = new Date(System.currentTimeMillis());
-        double subtotal = 5000.0;
-        double totalImpuestos = 950.0;
-        double total = 5950.0;
         String estadoF = "PAGADA";
         int idCliente = 1;
         int idMetodoPago = 1;
 
-        if (Factura.agregarFactura(connection, codigo, fecha, subtotal, totalImpuestos, total, estadoF, idCliente,
+        if (Factura.agregarFactura(connection, codigo, fecha,  estadoF, idCliente,
                 idMetodoPago)) {
             int facturaId = Factura.obtenerUltimaFacturaId(connection);
             int[] productoIds = { 1000, 1003, 1006, 1009, 1012 };

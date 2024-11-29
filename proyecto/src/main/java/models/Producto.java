@@ -123,8 +123,12 @@ public class Producto {
                     System.out.print("Ingrese el stock del producto: ");
                     int stock = scanner.nextInt();
 
-                    agregarProducto(connection, codigo, nombre, descripcion, precio, medida, impuestoId,
-                            categoriaId, stock);
+                    if (agregarProducto(connection, codigo, nombre, descripcion, precio, medida, impuestoId, categoriaId,
+                            stock)) {
+                        System.out.println("Producto creado exitosamente.");
+                    } else {
+                        System.out.println("Error al crear el producto.");
+                    }
                     break;
                 case 2:
                     System.out.print("Ingrese el ID del producto a modificar: ");
@@ -148,13 +152,21 @@ public class Producto {
                     System.out.print("Ingrese el nuevo stock: ");
                     int nuevoStock = scanner.nextInt();
 
-                    modificarProducto(connection, idModificar, nuevoCodigo, nuevoNombre, nuevaDescripcion,
-                            nuevoPrecio, nuevaMedida, nuevoImpuestoId, nuevoCategoriaId, nuevoStock);
+                    if (modificarProducto(connection, idModificar, nuevoCodigo, nuevoNombre, nuevaDescripcion, nuevoPrecio,
+                            nuevaMedida, nuevoImpuestoId, nuevoCategoriaId, nuevoStock)) {
+                        System.out.println("Producto modificado exitosamente.");
+                    } else {
+                        System.out.println("Error al modificar el producto.");
+                    }
                     break;
                 case 3:
                     System.out.print("Ingrese el ID del producto a eliminar: ");
                     int idEliminar = scanner.nextInt();
-                    eliminarProducto(connection, idEliminar);
+                    if (eliminarProducto(connection, idEliminar)) {
+                        System.out.println("Producto eliminado exitosamente.");
+                    } else {
+                        System.out.println("Error al eliminar el producto.");
+                    }
                     break;
                 case 4:
                     obtenerProductos(connection);

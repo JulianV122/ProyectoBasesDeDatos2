@@ -57,7 +57,6 @@ public class MetodoPago {
     public static boolean eliminarMetodoPago(Connection connection, int id) {
         String sql = "CALL proyecto.eliminar_metodo_pago(?)";
         try {
-            // Validación de ID
             if (id <= 0) {
                 System.out.println("Error: El ID del método de pago no es válido.");
                 return false;
@@ -96,32 +95,32 @@ public class MetodoPago {
                     System.out.print("Ingrese el identificador del método de pago: ");
                     String identificador = scanner.nextLine();
                     if (agregarMetodoPago(connection, descripcion, identificador)) {
-                        System.out.println("Método de pago creado correctamente.");
+                        System.out.println("\nMétodo de pago creado correctamente.");
                     } else {
-                        System.out.println("No se pudo crear el método de pago.");
+                        System.out.println("\nNo se pudo crear el método de pago.");
                     }
                     break;
                 case 2:
                     System.out.print("Ingrese el ID del método de pago a modificar: ");
                     int idModificar = scanner.nextInt();
-                    scanner.nextLine(); // Limpiar el buffer
+                    scanner.nextLine(); 
                     System.out.print("Ingrese la nueva descripción: ");
                     String nuevaDescripcion = scanner.nextLine();
                     System.out.print("Ingrese el nuevo identificador: ");
                     String nuevoIdentificador = scanner.nextLine();
                     if (modificarMetodoPago(connection, idModificar, nuevaDescripcion, nuevoIdentificador)) {
-                        System.out.println("Método de pago modificado correctamente.");
+                        System.out.println("\nMétodo de pago modificado correctamente.");
                     } else {
-                        System.out.println("No se pudo modificar el método de pago.");
+                        System.out.println("\nNo se pudo modificar el método de pago.");
                     }
                     break;
                 case 3:
                     System.out.print("Ingrese el ID del método de pago a eliminar: ");
                     int idEliminar = scanner.nextInt();
                     if (eliminarMetodoPago(connection, idEliminar)) {
-                        System.out.println("Método de pago eliminado correctamente.");
+                        System.out.println("\nMétodo de pago eliminado correctamente.");
                     } else {
-                        System.out.println("No se pudo eliminar el método de pago.");
+                        System.out.println("\nNo se pudo eliminar el método de pago.");
                     }
                     break;
                 case 0:

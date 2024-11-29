@@ -9,16 +9,12 @@ import java.util.Scanner;
 
 public class Factura {
 
-    public static boolean agregarFactura(Connection connection, String codigo, Date fecha, double subtotal,
-            double totalImpuestos, double total, String estadoF, int idCliente, int idMetodoPago) {
+    public static boolean agregarFactura(Connection connection, String codigo, Date fecha,  String estadoF, int idCliente, int idMetodoPago) {
         String sql = "CALL proyecto.agregar_factura(?, ?, ?, ?, ?, ?, ?, ?)";
         try {
             CallableStatement stmt = connection.prepareCall(sql);
             stmt.setString(1, codigo);
             stmt.setDate(2, fecha);
-            stmt.setDouble(3, subtotal);
-            stmt.setDouble(4, totalImpuestos);
-            stmt.setDouble(5, total);
             stmt.setString(6, estadoF);
             stmt.setInt(7, idCliente);
             stmt.setInt(8, idMetodoPago);
@@ -31,17 +27,12 @@ public class Factura {
         }
     }
 
-    public static boolean modificarFactura(Connection connection, int id, String codigo, Date fecha,
-            double subtotal, double totalImpuestos, double total, String estadoF, int idCliente, int idMetodoPago) {
-        String sql = "CALL proyecto.modificar_factura(?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    public static boolean modificarFactura(Connection connection, int id,  Date fecha,String estadoF, int idCliente, int idMetodoPago) {
+        String sql = "CALL proyecto.modificar_factura(?, ?, ?, ?, ?)";
         try {
             CallableStatement stmt = connection.prepareCall(sql);
             stmt.setInt(1, id);
-            stmt.setString(2, codigo);
             stmt.setDate(3, fecha);
-            stmt.setDouble(4, subtotal);
-            stmt.setDouble(5, totalImpuestos);
-            stmt.setDouble(6, total);
             stmt.setString(7, estadoF);
             stmt.setInt(8, idCliente);
             stmt.setInt(9, idMetodoPago);
@@ -211,59 +202,99 @@ public class Factura {
                     System.out.print("Ingrese la fecha de la factura (YYYY-MM-DD): ");
                     String fechaStr = scanner.nextLine();
                     Date fecha = Date.valueOf(fechaStr);
-                    System.out.print("Ingrese el subtotal: ");
-                    double subtotal = scanner.nextDouble();
-                    System.out.print("Ingrese el total de impuestos: ");
-                    double totalImpuestos = scanner.nextDouble();
-                    System.out.print("Ingrese el total: ");
-                    double total = scanner.nextDouble();
                     scanner.nextLine();
                     System.out.print("Ingrese el estado de la factura (PAGADA, PENDIENTE, EN PROCESO): ");
-                    String estadoF = scanner.nextLine();
+                    System.out.println("Seleccione el estado de la factura:");
+                    System.out.println("1. PAGADA");
+                    System.out.println("2. PENDIENTE");
+                    System.out.println("3. EN PROCESO");
+                    int estadoOption = scanner.nextInt();
+                    scanner.nextLine();
+                    String estadoF;
+                    switch (estadoOption) {
+                        case 1:
+                            estadoF = "PAGADA";
+                            break;
+                        case 2:
+                            estadoF = "PENDIENTE";
+                            break;
+                        case 3:
+                            estadoF = "EN PROCESO";
+                            break;
+                        default:
+                            System.out.println("Opción no válida. Se establecerá el estado como PENDIENTE.");
+                            estadoF = "PENDIENTE";
+                    }
                     System.out.print("Ingrese el ID del cliente: ");
                     int idCliente = scanner.nextInt();
                     System.out.print("Ingrese el ID del método de pago: ");
                     int idMetodoPago = scanner.nextInt();
-                    agregarFactura(connection, codigoFactura, fecha, subtotal, totalImpuestos, total, estadoF,
-                            idCliente, idMetodoPago);
+                    if (agregarFactura(connection, codigoFactura, fecha, estadoF,
+                            idCliente, idMetodoPago)) {
+                        System.out.println("\nFactura greada correctamente.");
+                    } else {
+                        System.out.println("\nNo se pudo crear la factura.");
+                    }
                     break;
                 case 2:
                     System.out.print("Ingrese el ID de la factura a modificar: ");
                     int idFacturaModificar = scanner.nextInt();
                     scanner.nextLine();
-                    System.out.print("Ingrese el nuevo código de la factura: ");
-                    String nuevoCodigoFactura = scanner.nextLine();
                     System.out.print("Ingrese la nueva fecha de la factura (YYYY-MM-DD): ");
                     String nuevaFechaStr = scanner.nextLine();
                     Date nuevaFecha = Date.valueOf(nuevaFechaStr);
-                    System.out.print("Ingrese el nuevo subtotal: ");
-                    double nuevoSubtotal = scanner.nextDouble();
-                    System.out.print("Ingrese el nuevo total de impuestos: ");
-                    double nuevoTotalImpuestos = scanner.nextDouble();
-                    System.out.print("Ingrese el nuevo total: ");
-                    double nuevoTotal = scanner.nextDouble();
                     scanner.nextLine();
-                    System.out.print("Ingrese el nuevo estado de la factura (PAGADA, PENDIENTE, EN PROCESO): ");
-                    String nuevoEstadoF = scanner.nextLine();
+                    System.out.print("Ingrese el estado de la factura (PAGADA, PENDIENTE, EN PROCESO): ");
+                    System.out.println("Seleccione el estado de la factura:");
+                    System.out.println("1. PAGADA");
+                    System.out.println("2. PENDIENTE");
+                    System.out.println("3. EN PROCESO");
+                    int estadoOptionn = scanner.nextInt();
+                    scanner.nextLine();
+                    String nuevoEstadoF;
+                    switch (estadoOptionn) {
+                        case 1:
+                            nuevoEstadoF = "PAGADA";
+                            break;
+                        case 2:
+                            nuevoEstadoF = "PENDIENTE";
+                            break;
+                        case 3:
+                            nuevoEstadoF = "EN PROCESO";
+                            break;
+                        default:
+                            System.out.println("Opción no válida. Se establecerá el estado como PENDIENTE.");
+                            nuevoEstadoF = "PENDIENTE";
+                    }
                     System.out.print("Ingrese el nuevo ID del cliente: ");
                     int nuevoIdCliente = scanner.nextInt();
                     System.out.print("Ingrese el nuevo ID del método de pago: ");
                     int nuevoIdMetodoPago = scanner.nextInt();
-                    modificarFactura(connection, idFacturaModificar, nuevoCodigoFactura, nuevaFecha,
-                            nuevoSubtotal, nuevoTotalImpuestos, nuevoTotal, nuevoEstadoF, nuevoIdCliente,
-                            nuevoIdMetodoPago);
+                    if (modificarFactura(connection, idFacturaModificar,  nuevaFecha, nuevoEstadoF, nuevoIdCliente, nuevoIdMetodoPago)) {
+                        System.out.println("\nFactura modificada correctamente.");
+                    } else {
+                        System.out.println("\nNo se pudo modificar la factura.");
+                    }
                     break;
                 case 3:
                     System.out.print("Ingrese el ID de la factura a eliminar: ");
                     int idFacturaEliminar = scanner.nextInt();
-                    eliminarFactura(connection, idFacturaEliminar);
+                    if (eliminarFactura(connection, idFacturaEliminar)) {
+                        System.out.println("\nFactura eliminada correctamente.");
+                    } else {
+                        System.out.println("\nNo se pudo eliminar la factura.");
+                    }
                     break;
                 case 4:
                     System.out.print("Ingrese el ID de la factura: ");
                     int idFactura = scanner.nextInt();
                     System.out.print("Ingrese el ID del cliente: ");
                     int idClienteF = scanner.nextInt();
-                    agregarClienteAFactura(connection, idFactura, idClienteF);
+                    if (agregarClienteAFactura(connection, idFactura, idClienteF)) {
+                        System.out.println("\nCliente agregado a la factura correctamente.");
+                    } else {
+                        System.out.println("\nNo se pudo agregar el cliente a la factura.");
+                    }
                     break;
                 case 5:
                     System.out.print("Ingrese el ID de la factura: ");
@@ -272,12 +303,20 @@ public class Factura {
                     int idProducto = scanner.nextInt();
                     System.out.print("Ingrese la cantidad: ");
                     int cantidad = scanner.nextInt();
-                    agregarProductoADetalleFactura(connection, idFacturaD, idProducto, cantidad);
+                    if (agregarProductoADetalleFactura(connection, idFacturaD, idProducto, cantidad)) {
+                        System.out.println("\nProducto agregado al detalle de la factura correctamente.");
+                    } else {
+                        System.out.println("\nNo se pudo agregar el producto al detalle de la factura.");
+                    }
                     break;
                 case 6:
                     System.out.print("Ingrese el ID de la factura: ");
                     int idFacturaImp = scanner.nextInt();
-                    calcularImpuestosFactura(connection, idFacturaImp);
+                    if (calcularImpuestosFactura(connection, idFacturaImp)) {
+                        System.out.println("\nImpuestos calculados correctamente.");
+                    } else {
+                        System.out.println("\nNo se pudieron calcular los impuestos.");
+                    }
                     break;
                 case 7:
                     System.out.print("Ingrese el ID de la factura: ");
@@ -287,14 +326,22 @@ public class Factura {
                     String tipoDescuento = scanner.nextLine();
                     System.out.print("Ingrese el valor del descuento: ");
                     double valorDescuento = scanner.nextDouble();
-                    aplicarDescuentoFactura(connection, idFacturaDesc, tipoDescuento, valorDescuento);
+                    if (aplicarDescuentoFactura(connection, idFacturaDesc, tipoDescuento, valorDescuento)) {
+                        System.out.println("\nDescuento aplicado correctamente.");
+                    } else {
+                        System.out.println("\nNo se pudo aplicar el descuento.");
+                    }
                     break;
                 case 8:
                     System.out.print("Ingrese el ID de la factura: ");
                     int idFacturaMP = scanner.nextInt();
                     System.out.print("Ingrese el ID del método de pago: ");
                     int idMetodoPagoF = scanner.nextInt();
-                    agregarMetodoPagoAFactura(connection, idFacturaMP, idMetodoPagoF);
+                    if (agregarMetodoPagoAFactura(connection, idFacturaMP, idMetodoPagoF)) {
+                        System.out.println("\nMétodo de pago agregado a la factura correctamente.");
+                    } else {
+                        System.out.println("\nNo se pudo agregar el método de pago a la factura.");
+                    }
                     break;
                 case 0:
                     System.out.println("Regresando al Menú Principal...");

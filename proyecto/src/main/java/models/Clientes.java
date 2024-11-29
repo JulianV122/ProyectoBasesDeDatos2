@@ -94,8 +94,11 @@ public class Clientes {
                     System.out.print("Ingrese el departamento del cliente: ");
                     String departamento = scanner.nextLine();
 
-                    agregarCliente(connection, documento, nombre, direccion, telefono, email, ciudad,
-                            departamento);
+                    if (agregarCliente(connection, documento, nombre, direccion, telefono, email, ciudad, departamento)) {
+                        System.out.println("Cliente agregado correctamente.");
+                    } else {
+                        System.out.println("Error al agregar el cliente.");
+                    }
                     break;
                 case 2:
                     System.out.print("Ingrese el ID del cliente a modificar: ");
@@ -116,13 +119,20 @@ public class Clientes {
                     System.out.print("Ingrese el nuevo departamento: ");
                     String nuevoDepartamento = scanner.nextLine();
 
-                    modificarCliente(connection, idModificar, nuevoDocumento, nuevoNombre, nuevaDireccion,
-                            nuevoTelefono, nuevoEmail, nuevaCiudad, nuevoDepartamento);
+                   if (modificarCliente(connection, idModificar, nuevoDocumento, nuevoNombre, nuevaDireccion, nuevoTelefono, nuevoEmail, nuevaCiudad, nuevoDepartamento)) {
+                        System.out.println("Cliente modificado correctamente.");
+                    } else {
+                        System.out.println("Error al modificar el cliente.");
+                    }
                     break;
                 case 3:
                     System.out.print("Ingrese el ID del cliente a eliminar: ");
                     int idEliminar = scanner.nextInt();
-                    eliminarCliente(connection, idEliminar);
+                    if (eliminarCliente(connection, idEliminar)) {
+                        System.out.println("Cliente eliminado correctamente.");
+                    } else {
+                        System.out.println("Error al eliminar el cliente.");
+                    }
                     break;
                 case 0:
                     System.out.println("Regresando al Menú Principal...");

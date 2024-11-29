@@ -71,7 +71,11 @@ public class Impuesto {
                     System.out.print("Ingrese el porcentaje del impuesto: ");
                     float porcentaje = scanner.nextFloat();
 
-                    agregarImpuesto(connection, nombreIm, porcentaje);
+                    if (agregarImpuesto(connection, nombreIm, porcentaje)) {
+                        System.out.println("Impuesto agregado correctamente.");
+                    } else {
+                        System.out.println("Error al agregar el impuesto.");
+                    }
                     break;
                 case 2:
                     System.out.print("Ingrese el id del impuesto a modificar: ");
@@ -82,13 +86,21 @@ public class Impuesto {
                     System.out.print("Ingrese el nuevo porcentaje del impuesto: ");
                     float nuevoPorcentaje = scanner.nextFloat();
 
-                    modificarImpuesto(connection, idModificarIm, nuevoNombreIm, nuevoPorcentaje);
+                    if (modificarImpuesto(connection, idModificarIm, nuevoNombreIm, nuevoPorcentaje)) {
+                        System.out.println("Impuesto modificado correctamente.");
+                    } else {
+                        System.out.println("Error al modificar el impuesto.");
+                    }
                     break;
                 case 3:
                     System.out.print("Ingrese el id del impuesto a eliminar: ");
                     int idEliminarIm = scanner.nextInt();
 
-                    eliminarImpuesto(connection, idEliminarIm);
+                    if (eliminarImpuesto(connection, idEliminarIm)) {
+                        System.out.println("Impuesto eliminado correctamente.");
+                    } else {
+                        System.out.println("Error al eliminar el impuesto.");
+                    }
                     break;
                 case 0:
                     System.out.println("Regresando al Menú Principal...");

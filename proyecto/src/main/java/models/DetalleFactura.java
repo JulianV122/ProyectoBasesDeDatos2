@@ -7,13 +7,12 @@ import java.util.Scanner;
 
 public class DetalleFactura {
 
-    public static boolean crearDetalleFactura(Connection connection, int cantidad, double valorTotal, float descuento,
+    public static boolean crearDetalleFactura(Connection connection, int cantidad, float descuento,
             int productoId, int facturaId) {
-        String sql = "CALL proyecto.crear_detalle_factura(?, ?, ?, ?, ?)";
+        String sql = "CALL proyecto.crear_detalle_factura(?, ?, ?, ?)";
         try {
             CallableStatement stmt = connection.prepareCall(sql);
             stmt.setInt(1, cantidad);
-            stmt.setDouble(2, valorTotal);
             stmt.setFloat(3, descuento);
             stmt.setInt(4, productoId);
             stmt.setInt(5, facturaId);
@@ -26,14 +25,13 @@ public class DetalleFactura {
         }
     }
 
-    public static boolean modificarDetalleFactura(Connection connection, int id, int cantidad, double valorTotal,
+    public static boolean modificarDetalleFactura(Connection connection, int id, int cantidad,
             float descuento, int productoId, int facturaId) {
         String sql = "CALL proyecto.modificar_detalle_factura(?, ?, ?, ?, ?, ?)";
         try {
             CallableStatement stmt = connection.prepareCall(sql);
             stmt.setInt(1, id);
             stmt.setInt(2, cantidad);
-            stmt.setDouble(3, valorTotal);
             stmt.setFloat(4, descuento);
             stmt.setInt(5, productoId);
             stmt.setInt(6, facturaId);
@@ -77,8 +75,6 @@ public class DetalleFactura {
                 case 1:
                     System.out.print("Ingrese la cantidad: ");
                     int cantidad = scanner.nextInt();
-                    System.out.print("Ingrese el valor total: ");
-                    double valorTotal = scanner.nextDouble();
                     System.out.print("Ingrese el descuento: ");
                     float descuento = scanner.nextFloat();
                     System.out.print("Ingrese el id del producto: ");
@@ -86,16 +82,17 @@ public class DetalleFactura {
                     System.out.print("Ingrese el id de la factura: ");
                     int facturaId = scanner.nextInt();
 
-                    crearDetalleFactura(connection, cantidad, valorTotal, descuento, productoId,
-                            facturaId);
+                    if (crearDetalleFactura(connection, cantidad, descuento, productoId, facturaId)) {
+                        System.out.println("Detalle de factura creado exitosamente.");
+                    } else {
+                        System.out.println("Error al crear el detalle de factura.");
+                    }
                     break;
                 case 2:
                     System.out.print("Ingrese el id del detalle de factura a modificar: ");
                     int idModificarDF = scanner.nextInt();
                     System.out.print("Ingrese la nueva cantidad: ");
                     int nuevaCantidad = scanner.nextInt();
-                    System.out.print("Ingrese el nuevo valor total: ");
-                    double nuevoValorTotal = scanner.nextDouble();
                     System.out.print("Ingrese el nuevo descuento: ");
                     float nuevoDescuento = scanner.nextFloat();
                     System.out.print("Ingrese el nuevo ID del producto: ");
@@ -103,14 +100,22 @@ public class DetalleFactura {
                     System.out.print("Ingrese el nuevo ID de la factura: ");
                     int nuevaFacturaId = scanner.nextInt();
 
-                    modificarDetalleFactura(connection, idModificarDF, nuevaCantidad,
-                            nuevoValorTotal, nuevoDescuento, nuevoProductoId, nuevaFacturaId);
+                    if (modificarDetalleFactura(connection, idModificarDF, nuevaCantidad, nuevoDescuento,
+                            nuevoProductoId, nuevaFacturaId)) {
+                        System.out.println("Detalle de factura modificado exitosamente.");
+                    } else {
+                        System.out.println("Error al modificar el detalle de factura.");
+                    }
                     break;
                 case 3:
                     System.out.print("Ingrese el id del detalle de factura a eliminar: ");
                     int idEliminarDF = scanner.nextInt();
 
-                    eliminarDetalleFactura(connection, idEliminarDF);
+                    if (eliminarDetalleFactura(connection, idEliminarDF)) {
+                        System.out.println("Detalle de factura eliminado exitosamente.");
+                    } else {
+                        System.out.println("Error al eliminar el detalle de factura.");
+                    }
                     break;
                 case 0:
                     System.out.println("Regresando al Menú Principal...");
