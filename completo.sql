@@ -127,9 +127,9 @@ CREATE TABLE proyecto.facturas (
 	id serial NOT NULL,
 	codigo varchar NOT NULL,
 	fecha date NULL,
-	subtotal double precision NULL,
-	total_impuestos double precision NULL,
-	total double precision NULL,
+	subtotal double precision DEFAULT 0,
+	total_impuestos double precision DEFAULT 0,
+	total double precision  DEFAULT 0,
 	estadoF proyecto.estado_factura NULL,
 	id_cliente serial NOT NULL,
 	id_metodo_pago serial NOT NULL,
@@ -141,8 +141,8 @@ CREATE TABLE proyecto.facturas (
 CREATE TABLE proyecto.detalles_facturas (
 	id serial NOT NULL,
 	cantidad int NULL,
-	valor_total double precision NULL,
-	descuento float4 NULL,
+	valor_total double precision DEFAULT 0,
+	descuento float4 DEFAULT 0,
 	producto_id serial NOT NULL,
 	factura_id serial NOT NULL,
 	CONSTRAINT detalles_facturas_pk PRIMARY KEY (id),
@@ -596,8 +596,8 @@ BEGIN
     FROM proyecto.informe_top10();
 
     -- Insertar el informe en la tabla 'proyecto.informes'
-    INSERT INTO proyecto.informes (tipo_informe, fecha, datos_json)
-    VALUES ('Top 10 productos más vendidos', CURRENT_DATE, datos_json);
+    INSERT INTO proyecto.informes (id,tipo_informe, fecha, datos_json)
+    VALUES (nextval('proyecto.seq_informes'),'Top 10 productos más vendidos', CURRENT_DATE, datos_json);
 
     -- Confirmar inserción (opcional para logging)
     RAISE NOTICE 'Informe Top 10 insertado con éxito en la fecha %', CURRENT_DATE;
@@ -874,17 +874,14 @@ $$;
 CREATE OR REPLACE PROCEDURE proyecto.agregar_factura(
     p_codigo VARCHAR, 
     p_fecha DATE, 
-    p_subtotal DOUBLE PRECISION, 
-    p_total_impuestos DOUBLE PRECISION, 
-    p_total DOUBLE PRECISION, 
     p_estadoF VARCHAR , 
     p_id_cliente INTEGER, 
     p_id_metodo_pago INTEGER)
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    INSERT INTO proyecto.facturas (id,codigo, fecha, subtotal, total_impuestos, total, estadoF, id_cliente, id_metodo_pago) 
-    VALUES (nextval('proyecto.factura_ids'),p_codigo, p_fecha, p_subtotal, p_total_impuestos, p_total, (p_estadoF::proyecto.estado_factura), p_id_cliente, p_id_metodo_pago);
+    INSERT INTO proyecto.facturas (id,codigo, fecha,  estadoF, id_cliente, id_metodo_pago) 
+    VALUES (nextval('proyecto.factura_ids'),p_codigo, p_fecha,(p_estadoF::proyecto.estado_factura), p_id_cliente, p_id_metodo_pago);
 
     RAISE NOTICE 'Factura con código % creada correctamente.', p_codigo;
     
@@ -899,11 +896,7 @@ $$;
 
 CREATE OR REPLACE PROCEDURE proyecto.modificar_factura(
     p_id INTEGER, 
-    p_codigo VARCHAR, 
     p_fecha DATE, 
-    p_subtotal DOUBLE PRECISION, 
-    p_total_impuestos DOUBLE PRECISION, 
-    p_total DOUBLE PRECISION, 
     p_estadoF VARCHAR, 
     p_id_cliente INTEGER, 
     p_id_metodo_pago INTEGER)
@@ -911,11 +904,7 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
     UPDATE proyecto.facturas
-    SET codigo = p_codigo,
-        fecha = p_fecha,
-        subtotal = p_subtotal,
-        total_impuestos = p_total_impuestos,
-        total = p_total,
+    SET fecha = p_fecha,
         estadoF = p_estadoF::proyecto.estado_factura,
         id_cliente = p_id_cliente,
         id_metodo_pago = p_id_metodo_pago
@@ -952,15 +941,14 @@ $$;
 --Detalles Factura
 CREATE OR REPLACE PROCEDURE proyecto.crear_detalle_factura(
     p_cantidad INTEGER, 
-    p_valor_total DOUBLE PRECISION, 
     p_descuento FLOAT, 
     p_producto_id INTEGER, 
     p_factura_id INTEGER)
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    INSERT INTO proyecto.detalles_facturas (cantidad, valor_total, descuento, producto_id, factura_id) 
-    VALUES (p_cantidad, p_valor_total, p_descuento, p_producto_id, p_factura_id);
+    INSERT INTO proyecto.detalles_facturas (cantidad, descuento, producto_id, factura_id) 
+    VALUES (p_cantidad, p_descuento, p_producto_id, p_factura_id);
 
     RAISE NOTICE 'Detalle de factura creado correctamente para la factura con ID %', p_factura_id;
     
@@ -973,7 +961,6 @@ $$;
 CREATE OR REPLACE PROCEDURE proyecto.modificar_detalle_factura(
     p_id INTEGER, 
     p_cantidad INTEGER, 
-    p_valor_total DOUBLE PRECISION, 
     p_descuento FLOAT, 
     p_producto_id INTEGER, 
     p_factura_id INTEGER)
@@ -983,7 +970,6 @@ BEGIN
     UPDATE proyecto.detalles_facturas
     SET cantidad = p_cantidad,
         valor_total = p_valor_total,
-        descuento = p_descuento,
         producto_id = p_producto_id,
         factura_id = p_factura_id
     WHERE id = p_id;
@@ -1190,9 +1176,9 @@ BEGIN
         '<factura_id>' || NEW.id || '</factura_id>' ||
         '<codigo_factura>' || NEW.codigo || '</codigo_factura>' ||
         '<fecha>' || NEW.fecha || '</fecha>' ||
-        '<subtotal>' || NEW.subtotal || '</subtotal>' ||
-        '<total_impuestos>' || NEW.total_impuestos || '</total_impuestos>' ||
-        '<total>' || NEW.total || '</total>' ||
+        '<subtotal>0</subtotal>' ||
+        '<total_impuestos>0</total_impuestos>' ||
+        '<total>0</total>' ||
         '<cliente>' ||
         '<id_cliente>' || NEW.id_cliente || '</id_cliente>' ||
         '<nombre_cliente>' || c.nombre || '</nombre_cliente>' ||
@@ -1432,5 +1418,35 @@ BEGIN
     ) AS sub;
 
     RETURN v_total_descuento;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION proyecto.obtener_detalle_factura_info(p_detalle_id INTEGER)
+RETURNS TABLE (
+    fecha_factura DATE,
+    nombre_cliente VARCHAR,
+    cantidad INTEGER,
+    nombre_producto VARCHAR,
+    total_venta DOUBLE PRECISION
+)
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        f.fecha AS fecha_factura,
+        c.nombre AS nombre_cliente,
+        df.cantidad,
+        p.nombre AS nombre_producto,
+        df.valor_total AS total_venta
+    FROM 
+        proyecto.detalles_facturas df
+    JOIN 
+        proyecto.facturas f ON df.factura_id = f.id
+    JOIN 
+        proyecto.clientes c ON f.id_cliente = c.id
+    JOIN 
+        proyecto.productos p ON df.producto_id = p.id
+    WHERE 
+        df.id = p_detalle_id;
 END;
 $$ LANGUAGE plpgsql;

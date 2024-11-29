@@ -81,7 +81,7 @@ public class Informe {
     }
 
     public static void insertarInformeTop10(Connection connection) {
-        String sql = "SELECT proyecto.insertar_informe_top10()";
+        String sql = "CALL proyecto.insertar_informe_top10()";
         try {
             CallableStatement stmt = connection.prepareCall(sql);
             stmt.execute();
@@ -176,8 +176,7 @@ public class Informe {
                     }
                     break;
                 case 5:
-                    insertarInformeTop10(connection);
-                    
+                    insertarInformeTop10(connection);                    
                     break;
                 
                 case 6:

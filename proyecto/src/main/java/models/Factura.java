@@ -7,17 +7,21 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Scanner;
 
+import com.mongodb.client.MongoCollection;
+import org.bson.Document;
+
 public class Factura {
 
-    public static boolean agregarFactura(Connection connection, String codigo, Date fecha,  String estadoF, int idCliente, int idMetodoPago) {
-        String sql = "CALL proyecto.agregar_factura(?, ?, ?, ?, ?, ?, ?, ?)";
+    public static boolean agregarFactura(Connection connection, String codigo, Date fecha, String estadoF,
+            int idCliente, int idMetodoPago) {
+        String sql = "CALL proyecto.agregar_factura(?, ?, ?, ?, ?)";
         try {
             CallableStatement stmt = connection.prepareCall(sql);
             stmt.setString(1, codigo);
             stmt.setDate(2, fecha);
-            stmt.setString(6, estadoF);
-            stmt.setInt(7, idCliente);
-            stmt.setInt(8, idMetodoPago);
+            stmt.setString(3, estadoF);
+            stmt.setInt(4, idCliente);
+            stmt.setInt(5, idMetodoPago);
             stmt.execute();
             stmt.close();
             return true;
@@ -27,15 +31,16 @@ public class Factura {
         }
     }
 
-    public static boolean modificarFactura(Connection connection, int id,  Date fecha,String estadoF, int idCliente, int idMetodoPago) {
+    public static boolean modificarFactura(Connection connection, int id, Date fecha, String estadoF, int idCliente,
+            int idMetodoPago) {
         String sql = "CALL proyecto.modificar_factura(?, ?, ?, ?, ?)";
         try {
             CallableStatement stmt = connection.prepareCall(sql);
             stmt.setInt(1, id);
-            stmt.setDate(3, fecha);
-            stmt.setString(7, estadoF);
-            stmt.setInt(8, idCliente);
-            stmt.setInt(9, idMetodoPago);
+            stmt.setDate(2, fecha);
+            stmt.setString(3, estadoF);
+            stmt.setInt(4, idCliente);
+            stmt.setInt(5, idMetodoPago);
             stmt.execute();
             stmt.close();
             return true;
@@ -79,7 +84,7 @@ public class Factura {
         }
     }
 
-    public static boolean agregarProductoADetalleFactura(Connection connection, int facturaId, int productoId,
+    public static boolean agregarProductoADetalleFactura(MongoCollection<Document> collection, Connection connection, int facturaId, int productoId,
             int cantidad) {
         String sql = "SELECT proyecto.agregar_producto_a_detalle_factura(?, ?, ?)";
         try {
@@ -94,6 +99,35 @@ public class Factura {
             }
             rs.close();
             stmt.close();
+
+            int idDetalle = 0;
+            String ultimoDetalleSql = "SELECT MAX(id) FROM proyecto.detalles_facturas";
+            CallableStatement ultimoDetalleStmt = connection.prepareCall(ultimoDetalleSql);
+            ResultSet ultimoDetalleRs = ultimoDetalleStmt.executeQuery();
+            if (ultimoDetalleRs.next()) {
+                idDetalle = ultimoDetalleRs.getInt(1);
+            }
+            ultimoDetalleRs.close();
+            ultimoDetalleStmt.close();
+
+            String detalleSql = "SELECT * FROM proyecto.obtener_detalle_factura_info(?)";
+            CallableStatement detalleStmt = connection.prepareCall(detalleSql);
+            detalleStmt.setInt(1, idDetalle);
+            ResultSet detalleRs = detalleStmt.executeQuery();
+            if (detalleRs.next()) {
+                Date fecha = detalleRs.getDate("fecha_factura");
+                String nombreCliente = detalleRs.getString("nombre_cliente");
+                int cantidadD = detalleRs.getInt("cantidad");
+                String producto = detalleRs.getString("nombre_producto");
+                double total = detalleRs.getDouble("total_venta");
+
+                AuditoriaMongo.insertarAuditoria(collection, idDetalle, fecha, nombreCliente, cantidadD, producto, total);
+
+            }
+            detalleRs.close();
+            detalleStmt.close();
+
+            
             return true;
         } catch (SQLException e) {
             System.out.println(e.getMessage());
@@ -177,7 +211,7 @@ public class Factura {
     }
 
     // Menú de Facturas
-    public static void menuFacturas(Scanner scanner, Connection connection) {
+    public static void menuFacturas(Scanner scanner, Connection connection, MongoCollection<Document> collection) {
         int option;
         do {
             System.out.println("\n--- Facturas ---");
@@ -270,7 +304,8 @@ public class Factura {
                     int nuevoIdCliente = scanner.nextInt();
                     System.out.print("Ingrese el nuevo ID del método de pago: ");
                     int nuevoIdMetodoPago = scanner.nextInt();
-                    if (modificarFactura(connection, idFacturaModificar,  nuevaFecha, nuevoEstadoF, nuevoIdCliente, nuevoIdMetodoPago)) {
+                    if (modificarFactura(connection, idFacturaModificar, nuevaFecha, nuevoEstadoF, nuevoIdCliente,
+                            nuevoIdMetodoPago)) {
                         System.out.println("\nFactura modificada correctamente.");
                     } else {
                         System.out.println("\nNo se pudo modificar la factura.");
@@ -303,7 +338,7 @@ public class Factura {
                     int idProducto = scanner.nextInt();
                     System.out.print("Ingrese la cantidad: ");
                     int cantidad = scanner.nextInt();
-                    if (agregarProductoADetalleFactura(connection, idFacturaD, idProducto, cantidad)) {
+                    if (agregarProductoADetalleFactura(collection, connection, idFacturaD, idProducto, cantidad)) {
                         System.out.println("\nProducto agregado al detalle de la factura correctamente.");
                     } else {
                         System.out.println("\nNo se pudo agregar el producto al detalle de la factura.");
@@ -321,9 +356,22 @@ public class Factura {
                 case 7:
                     System.out.print("Ingrese el ID de la factura: ");
                     int idFacturaDesc = scanner.nextInt();
-                    scanner.nextLine();
-                    System.out.print("Ingrese el tipo de descuento (POR PRODUCTO, TOTAL): ");
-                    String tipoDescuento = scanner.nextLine();
+                    System.out.print("Seleccione el tipo de descuento:");
+                    System.out.println("\n1. POR_PRODUCTO");
+                    System.out.println("2. VALOR");
+                    int tipoDescuentoOption = scanner.nextInt();
+                    String tipoDescuento;
+                    switch (tipoDescuentoOption) {
+                        case 1:
+                            tipoDescuento = "POR_PRODUCTO";
+                            break;
+                        case 2:
+                            tipoDescuento = "VALOR";
+                            break;
+                        default:
+                            System.out.println("Opción no válida. Se establecerá el descuento como POR_PRODUCTO.");
+                            tipoDescuento = "POR_PRODUCTO";
+                    }
                     System.out.print("Ingrese el valor del descuento: ");
                     double valorDescuento = scanner.nextDouble();
                     if (aplicarDescuentoFactura(connection, idFacturaDesc, tipoDescuento, valorDescuento)) {

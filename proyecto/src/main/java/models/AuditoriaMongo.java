@@ -16,7 +16,7 @@ public class AuditoriaMongo {
         }
     };
 
-    public static void insertarAuditoria(MongoCollection<Document> collection, String id, Date fecha,
+    public static void insertarAuditoria(MongoCollection<Document> collection, int id, Date fecha,
             String nombreCliente, Integer cantidad, String producto, Double total) {
         Document document = new Document("id", id)
                 .append("fecha", fecha)
@@ -56,7 +56,7 @@ public class AuditoriaMongo {
             switch (option) {
                 case 1:
                     System.out.print("Ingrese el id de la auditoría: ");
-                    String id = scanner.nextLine();
+                    int id = scanner.nextInt();
                     System.out.print("Ingrese la fecha de la auditoría: ");
                     Date fecha = new Date();
                     scanner.nextLine();

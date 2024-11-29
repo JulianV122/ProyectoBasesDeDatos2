@@ -44,7 +44,7 @@ public class Proyecto {
                     MetodoPago.menuMetodosPago(scanner, connection);
                     break;
                 case 2:
-                    Factura.menuFacturas(scanner, connection);
+                    Factura.menuFacturas(scanner, connection, collection);
                     break;
                 case 3:
                     Producto.menuProductos(scanner, connection);
@@ -80,7 +80,7 @@ public class Proyecto {
                     ExportarInformes.menuExportarInformes(scanner, connection);
                     break;
                 case 99:
-                    Builder.buildAll(connection);
+                    Builder.buildAll(connection, collection);
                     break;
                 case 0:
                     System.out.println("Saliendo del sistema...");

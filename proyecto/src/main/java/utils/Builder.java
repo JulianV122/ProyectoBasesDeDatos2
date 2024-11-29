@@ -3,6 +3,10 @@ package utils;
 import java.sql.Connection;
 import java.sql.Date;
 
+import org.bson.Document;
+
+import com.mongodb.client.MongoCollection;
+
 import models.Factura;
 import models.Categoria;
 import models.Clientes;
@@ -59,21 +63,20 @@ public class Builder {
         }
     }
 
-    public static void buildFactura(Connection connection) {
+    public static void buildFactura(Connection connection, MongoCollection<Document> collection) {
         String codigo = "F002";
         Date fecha = new Date(System.currentTimeMillis());
         String estadoF = "PAGADA";
         int idCliente = 1;
         int idMetodoPago = 1;
 
-        if (Factura.agregarFactura(connection, codigo, fecha,  estadoF, idCliente,
-                idMetodoPago)) {
+        if (Factura.agregarFactura(connection, codigo, fecha,  estadoF, idCliente, idMetodoPago)) {
             int facturaId = Factura.obtenerUltimaFacturaId(connection);
             int[] productoIds = { 1000, 1003, 1006, 1009, 1012 };
             int[] cantidades = { 1, 2, 3, 4, 5 };
             System.out.println(facturaId);
             for (int i = 0; i < productoIds.length; i++) {
-                Factura.agregarProductoADetalleFactura(connection, facturaId, productoIds[i], cantidades[i]);
+                Factura.agregarProductoADetalleFactura(collection, connection, facturaId, productoIds[i], cantidades[i]);
             }
         }
     }
@@ -143,13 +146,13 @@ public class Builder {
         }
     }
 
-    public static void buildAll(Connection connection) {
+    public static void buildAll(Connection connection, MongoCollection<Document> collection) {
         buildImpuestos(connection);
         buildCategorias(connection);
         buildProductos(connection);
         buildClientes(connection);
         buildMetodosPago(connection);
-        buildFactura(connection);
+        buildFactura(connection, collection);
         buildAuditorias(connection);
         buildInventarios(connection);
         buildInformes(connection);

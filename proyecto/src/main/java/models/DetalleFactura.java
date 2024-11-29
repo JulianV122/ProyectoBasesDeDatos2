@@ -13,9 +13,9 @@ public class DetalleFactura {
         try {
             CallableStatement stmt = connection.prepareCall(sql);
             stmt.setInt(1, cantidad);
-            stmt.setFloat(3, descuento);
-            stmt.setInt(4, productoId);
-            stmt.setInt(5, facturaId);
+            stmt.setFloat(2, descuento);
+            stmt.setInt(3, productoId);
+            stmt.setInt(4, facturaId);
             stmt.execute();
             stmt.close();
             return true;
@@ -32,9 +32,9 @@ public class DetalleFactura {
             CallableStatement stmt = connection.prepareCall(sql);
             stmt.setInt(1, id);
             stmt.setInt(2, cantidad);
-            stmt.setFloat(4, descuento);
-            stmt.setInt(5, productoId);
-            stmt.setInt(6, facturaId);
+            stmt.setFloat(3, descuento);
+            stmt.setInt(4, productoId);
+            stmt.setInt(5, facturaId);
             stmt.execute();
             stmt.close();
             return true;
