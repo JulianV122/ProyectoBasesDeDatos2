@@ -1089,7 +1089,8 @@ RETURNS TRIGGER AS $$
 DECLARE
     v_descripcion TEXT;
 BEGIN
-    v_descripcion := 
+    -- Construir la descripción en formato XML con la información requerida
+    SELECT 
         '<factura>' ||
         '<factura_id>' || NEW.id || '</factura_id>' ||
         '<codigo_factura>' || NEW.codigo || '</codigo_factura>' ||
@@ -1099,15 +1100,20 @@ BEGIN
         '<total>' || NEW.total || '</total>' ||
         '<cliente>' ||
         '<id_cliente>' || NEW.id_cliente || '</id_cliente>' ||
-        '<nombre_cliente></nombre_cliente>' ||  
-        '<documento_cliente></documento_cliente>' || 
-        '<direccion_cliente></direccion_cliente>' ||  
+        '<nombre_cliente>' || c.nombre || '</nombre_cliente>' ||
+        '<documento_cliente>' || c.numero_documento || '</documento_cliente>' ||
+        '<direccion_cliente>' || c.direccion || '</direccion_cliente>' ||
         '</cliente>' ||
         '<estado>' || NEW.estadoF || '</estado>' ||
         '<id_metodo_pago>' || NEW.id_metodo_pago || '</id_metodo_pago>' ||
-        '<descripcion_metodo_pago></descripcion_metodo_pago>' ||
-        '<detalles_factura></detalles_factura>' || 
-        '</factura>';
+        '<descripcion_metodo_pago>' || mp.descripcion || '</descripcion_metodo_pago>' ||
+        '<detalles_factura>' ||
+        '</detalles_factura>' ||
+        '</factura>'
+    INTO v_descripcion
+    FROM proyecto.clientes c
+    JOIN proyecto.metodos_pago mp ON mp.id = NEW.id_metodo_pago
+    WHERE c.id = NEW.id_cliente;
 
     -- Insertar el registro en la tabla xml_facturas
     INSERT INTO proyecto.xml_facturas (id, factura_id, descripcion)
@@ -1180,6 +1186,88 @@ AFTER INSERT ON proyecto.detalles_facturas
 FOR EACH ROW
 EXECUTE FUNCTION proyecto.insertar_detalle_factura_xml();
 
+
+CREATE OR REPLACE FUNCTION proyecto.actualizar_stock_producto()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_stock_actual INTEGER;
+BEGIN
+    SELECT stock INTO v_stock_actual FROM proyecto.productos WHERE id = NEW.producto_id;
+
+    IF v_stock_actual < NEW.cantidad THEN
+        RAISE EXCEPTION 'No hay suficientes productos en stock para el producto con id %', NEW.producto_id;
+    END IF;
+
+    UPDATE proyecto.productos
+    SET stock = stock - NEW.cantidad
+    WHERE id = NEW.producto_id;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_actualizar_stock_producto
+BEFORE INSERT ON proyecto.detalles_facturas
+FOR EACH ROW
+EXECUTE FUNCTION proyecto.actualizar_stock_producto();
+
+
+CREATE OR REPLACE FUNCTION proyecto.actualizar_subtotal_factura_before()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE proyecto.facturas
+    SET subtotal = subtotal + NEW.valor_total
+    WHERE id = NEW.factura_id;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_actualizar_subtotal_factura_before
+BEFORE INSERT ON proyecto.detalles_facturas
+FOR EACH ROW
+EXECUTE FUNCTION proyecto.actualizar_subtotal_factura_before();
+
+
+CREATE OR REPLACE FUNCTION proyecto.actualizar_total_impuestos_before()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_impuesto DOUBLE PRECISION;
+BEGIN
+    SELECT i.porcentaje INTO v_impuesto
+    FROM proyecto.productos p
+    JOIN proyecto.impuestos i ON p.impuesto_id = i.id
+    WHERE p.id = NEW.producto_id;
+
+    UPDATE proyecto.facturas
+    SET total_impuestos = total_impuestos + (NEW.valor_total * v_impuesto / 100)
+    WHERE id = NEW.factura_id;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_actualizar_total_impuestos_before
+BEFORE INSERT ON proyecto.detalles_facturas
+FOR EACH ROW
+EXECUTE FUNCTION proyecto.actualizar_total_impuestos_before();
+
+
+CREATE OR REPLACE FUNCTION proyecto.actualizar_total_factura_before()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE proyecto.facturas
+    SET total = subtotal + total_impuestos
+    WHERE id = NEW.factura_id;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_actualizar_total_factura_before
+BEFORE INSERT ON proyecto.detalles_facturas
+FOR EACH ROW
+EXECUTE FUNCTION proyecto.actualizar_total_factura_before();
 
 
 CREATE OR REPLACE FUNCTION proyecto.obtener_datos_cliente_xml(p_factura_id INTEGER)
