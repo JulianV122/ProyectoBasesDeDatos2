@@ -485,3 +485,29 @@ CREATE TRIGGER trg_validar_total_auditoria
 BEFORE UPDATE ON proyecto.auditorias
 FOR EACH ROW
 EXECUTE FUNCTION proyecto.validar_total_auditoria();
+
+-- Función para validar el email del cliente antes de insertar o actualizar
+CREATE OR REPLACE FUNCTION proyecto.validar_email_cliente()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Validar que el email tenga un formato correcto
+    IF NEW.email !~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$' THEN
+        RAISE EXCEPTION 'El email % no tiene un formato válido.', NEW.email;
+    END IF;
+
+    -- Si pasa la validación, continuar con la operación
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger para validar el email del cliente antes de insertar
+CREATE TRIGGER trg_validar_email_cliente_insert
+BEFORE INSERT ON proyecto.clientes
+FOR EACH ROW
+EXECUTE FUNCTION proyecto.validar_email_cliente();
+
+-- Trigger para validar el email del cliente antes de actualizar
+CREATE TRIGGER trg_validar_email_cliente_update
+BEFORE UPDATE ON proyecto.clientes
+FOR EACH ROW
+EXECUTE FUNCTION proyecto.validar_email_cliente();
