@@ -65,6 +65,7 @@ public class Proyecto {
                     Impuesto.menuImpuestos(scanner, connection);
                     break;
                 case 9:
+                    Auditoria.menuAuditorias(scanner, connection);
                     break;
                 case 10:
                     AuditoriaMongo.menuAuditoria(scanner, collection);

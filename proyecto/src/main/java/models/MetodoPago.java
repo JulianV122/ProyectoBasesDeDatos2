@@ -11,15 +11,21 @@ public class MetodoPago {
     public static boolean agregarMetodoPago(Connection connection, String descripcion, String identificador) {
         String sql = "CALL proyecto.crear_metodo_pago(?, ?)";
         try {
+            if (descripcion.isEmpty() || identificador.isEmpty()) {
+                System.out.println("Error: La descripción y el identificador no pueden estar vacíos.");
+                return false;
+            }
+
             CallableStatement stmt = connection.prepareCall(sql);
             stmt.setString(1, descripcion);         
             stmt.setString(2, identificador);     
             stmt.execute();                         
             stmt.close();                           
             return true;                            
+
         } catch (SQLException e) {
-            System.out.println(e.getMessage());     
-            return false;                           
+            System.out.println("Error al agregar el método de pago: " + e.getMessage());     
+            return false;                            
         }
     }
 
@@ -27,15 +33,22 @@ public class MetodoPago {
     public static boolean modificarMetodoPago(Connection connection, int id, String descripcion, String identificador) {
         String sql = "CALL proyecto.modificar_metodo_pago(?, ?, ?)";
         try {
+            if (descripcion.isEmpty() || identificador.isEmpty()) {
+                System.out.println("Error: La descripción y el identificador no pueden estar vacíos.");
+                return false;
+            }
+
             CallableStatement stmt = connection.prepareCall(sql);
             stmt.setInt(1, id);                    
             stmt.setString(2, descripcion);        
             stmt.setString(3, identificador);      
             stmt.execute();                         
             stmt.close();                           
+
             return true;                           
+
         } catch (SQLException e) {
-            e.printStackTrace();                  
+            System.out.println("Error al modificar el método de pago: " + e.getMessage());  
             return false;                          
         }
     }
@@ -44,17 +57,25 @@ public class MetodoPago {
     public static boolean eliminarMetodoPago(Connection connection, int id) {
         String sql = "CALL proyecto.eliminar_metodo_pago(?)";
         try {
+            // Validación de ID
+            if (id <= 0) {
+                System.out.println("Error: El ID del método de pago no es válido.");
+                return false;
+            }
+
             CallableStatement stmt = connection.prepareCall(sql);
             stmt.setInt(1, id);                   
             stmt.execute();                         
             stmt.close();                           
             return true;                            
+
         } catch (SQLException e) {
-            e.printStackTrace();                   
-            return false;                         
+            System.out.println("Error al eliminar el método de pago: " + e.getMessage()); 
+            return false;                          
         }
     }
 
+    // Menú de métodos de pago
     public static void menuMetodosPago(Scanner scanner, Connection connection) {
         int option;
         do {
@@ -74,22 +95,34 @@ public class MetodoPago {
                     String descripcion = scanner.nextLine();
                     System.out.print("Ingrese el identificador del método de pago: ");
                     String identificador = scanner.nextLine();
-                    agregarMetodoPago(connection, descripcion, identificador);
+                    if (agregarMetodoPago(connection, descripcion, identificador)) {
+                        System.out.println("Método de pago creado correctamente.");
+                    } else {
+                        System.out.println("No se pudo crear el método de pago.");
+                    }
                     break;
                 case 2:
                     System.out.print("Ingrese el ID del método de pago a modificar: ");
                     int idModificar = scanner.nextInt();
-                    scanner.nextLine();
+                    scanner.nextLine(); // Limpiar el buffer
                     System.out.print("Ingrese la nueva descripción: ");
                     String nuevaDescripcion = scanner.nextLine();
                     System.out.print("Ingrese el nuevo identificador: ");
                     String nuevoIdentificador = scanner.nextLine();
-                    modificarMetodoPago(connection, idModificar, nuevaDescripcion, nuevoIdentificador);
+                    if (modificarMetodoPago(connection, idModificar, nuevaDescripcion, nuevoIdentificador)) {
+                        System.out.println("Método de pago modificado correctamente.");
+                    } else {
+                        System.out.println("No se pudo modificar el método de pago.");
+                    }
                     break;
                 case 3:
                     System.out.print("Ingrese el ID del método de pago a eliminar: ");
                     int idEliminar = scanner.nextInt();
-                    eliminarMetodoPago(connection, idEliminar);
+                    if (eliminarMetodoPago(connection, idEliminar)) {
+                        System.out.println("Método de pago eliminado correctamente.");
+                    } else {
+                        System.out.println("No se pudo eliminar el método de pago.");
+                    }
                     break;
                 case 0:
                     System.out.println("Regresando al Menú Principal...");
@@ -99,6 +132,4 @@ public class MetodoPago {
             }
         } while (option != 0);
     }
-
-
 }

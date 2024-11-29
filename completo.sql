@@ -525,10 +525,7 @@ CREATE OR REPLACE PROCEDURE proyecto.crear_auditoria(p_fecha date, p_nombre_clie
 LANGUAGE plpgsql
 AS $$
 BEGIN
-	INSERT INTO proyecto.auditorias (id,fecha,nombre_cliente,cantidad,nombre_producto,total) VALUES (nextval('proyecto.seq_auditorias'),p_fecha,p_nombre_cliente,p_cantidad,p_nombre_producto,p_total);
-	EXCEPTION
-		WHEN unique_violation THEN
-			RAISE EXCEPTION 'El id % ya existe y no se puede repetir', p_id;
+	INSERT INTO proyecto.auditorias (fecha,nombre_cliente,cantidad,nombre_producto,total) VALUES (p_fecha,p_nombre_cliente,p_cantidad,p_nombre_producto,p_total);
 	RAISE NOTICE 'Auditoria creada exitosamente';
 END;
 $$;
@@ -740,8 +737,6 @@ EXCEPTION
 END;
 $$;
 
-CALL proyecto.crear_metodo_pago('Pago con tarjeta', 'TD'); 
-
 
 CREATE OR REPLACE PROCEDURE proyecto.modificar_metodo_pago(p_id INTEGER, p_descripcion VARCHAR, p_identificador VARCHAR)
 LANGUAGE plpgsql
@@ -764,7 +759,6 @@ EXCEPTION
 END;
 $$;
 
-CALL proyecto.modificar_metodo_pago(2, 'Pago con tarjeta actualizado', 'TD');
 
 
 CREATE OR REPLACE PROCEDURE proyecto.eliminar_metodo_pago(p_id INTEGER)
@@ -844,7 +838,6 @@ EXCEPTION
 END;
 $$;
 
-CALL proyecto.modificar_factura(2, 'FAC002', '2024-11-26', 1100.0, 220.0, 1320.0, 'PAGADA', 2, 1);
 
 
 CREATE OR REPLACE PROCEDURE proyecto.eliminar_factura(p_id INTEGER)
@@ -951,7 +944,6 @@ EXCEPTION
 END;
 $$ LANGUAGE plpgsql;
 
-SELECT proyecto.agregar_cliente_a_factura(1, 1);
 
 --Agregar productos al detalle de la factura
 CREATE OR REPLACE FUNCTION proyecto.agregar_producto_a_detalle_factura(p_factura_id INTEGER, p_producto_id INTEGER, p_cantidad INTEGER)
@@ -981,7 +973,6 @@ EXCEPTION
 END;
 $$ LANGUAGE plpgsql;
 
-SELECT proyecto.agregar_producto_a_detalle_factura(1,1000, 3);
 
 
 --Calcular impuestos de los productos
@@ -1098,7 +1089,6 @@ RETURNS TRIGGER AS $$
 DECLARE
     v_descripcion TEXT;
 BEGIN
-    -- Construir la descripción inicial con una estructura XML básica
     v_descripcion := 
         '<factura>' ||
         '<factura_id>' || NEW.id || '</factura_id>' ||
@@ -1109,14 +1099,14 @@ BEGIN
         '<total>' || NEW.total || '</total>' ||
         '<cliente>' ||
         '<id_cliente>' || NEW.id_cliente || '</id_cliente>' ||
-        '<nombre_cliente></nombre_cliente>' ||  -- Inicializa vacío si el cliente no está cargado
-        '<documento_cliente></documento_cliente>' ||  -- Inicializa vacío
-        '<direccion_cliente></direccion_cliente>' ||  -- Inicializa vacío
+        '<nombre_cliente></nombre_cliente>' ||  
+        '<documento_cliente></documento_cliente>' || 
+        '<direccion_cliente></direccion_cliente>' ||  
         '</cliente>' ||
         '<estado>' || NEW.estadoF || '</estado>' ||
         '<id_metodo_pago>' || NEW.id_metodo_pago || '</id_metodo_pago>' ||
-        '<descripcion_metodo_pago></descripcion_metodo_pago>' || -- Inicializa vacío
-        '<detalles_factura></detalles_factura>' ||  -- Estructura inicial para detalles
+        '<descripcion_metodo_pago></descripcion_metodo_pago>' ||
+        '<detalles_factura></detalles_factura>' || 
         '</factura>';
 
     -- Insertar el registro en la tabla xml_facturas
