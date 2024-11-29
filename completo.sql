@@ -1187,30 +1187,25 @@ RETURNS TABLE (nombre_cliente VARCHAR, documento_cliente VARCHAR, direccion_clie
 BEGIN
     RETURN QUERY
     SELECT
-        xpath('/factura/clientes/nombre_cliente/text()', descripcion::xml)::VARCHAR AS nombre_cliente,
-        xpath('/factura/clientes/documento_cliente/text()', descripcion::xml)::VARCHAR AS documento_cliente,
-        xpath('/factura/clientes/direccion_cliente/text()', descripcion::xml)::VARCHAR AS direccion_cliente
+        unnest(xpath('/factura/cliente/nombre_cliente/text()', descripcion))::VARCHAR AS nombre_cliente,
+        unnest(xpath('/factura/cliente/documento_cliente/text()', descripcion))::VARCHAR AS documento_cliente,
+        unnest(xpath('/factura/cliente/direccion_cliente/text()', descripcion))::VARCHAR AS direccion_cliente
     FROM proyecto.xml_facturas
     WHERE factura_id = p_factura_id;
 END;
 $$ LANGUAGE plpgsql;
 
+-- SELECT nombre_cliente FROM proyecto.obtener_datos_cliente_xml(1)
 
 CREATE OR REPLACE FUNCTION proyecto.obtener_detalles_factura_xml(p_factura_id INTEGER)
-RETURNS TABLE (nombre_producto VARCHAR, id_producto INTEGER, cantidad INTEGER, valor_total NUMERIC, descuento NUMERIC) AS $$
+RETURNS TABLE (nombre_producto VARCHAR, id_producto VARCHAR, cantidad VARCHAR, valor_total VARCHAR, descuento VARCHAR) AS $$
 DECLARE
-    nombre_producto TEXT;
-    id_producto INTEGER;
-    cantidad INTEGER;
-    valor_total NUMERIC;
-    descuento NUMERIC;
-
     cur CURSOR FOR
-        SELECT unnest(xpath('/factura/detalles_factura/detalle/nombre_producto/text()', descripcion::xml)::text[]) AS nombre_producto,
-               unnest(xpath('/factura/detalles_factura/detalle/id_producto/text()', descripcion::xml)::text[])::INTEGER AS id_producto,
-               unnest(xpath('/factura/detalles_factura/detalle/cantidad/text()', descripcion::xml)::text[])::INTEGER AS cantidad,
-               unnest(xpath('/factura/detalles_factura/detalle/valor_total/text()', descripcion::xml)::text[])::NUMERIC AS valor_total,
-               unnest(xpath('/factura/detalles_factura/detalle/descuento/text()', descripcion::xml)::text[])::NUMERIC AS descuento
+        SELECT unnest(xpath('/factura/detalles_factura/detalle/nombre_producto/text()', descripcion))::VARCHAR AS nombre_producto,
+               unnest(xpath('/factura/detalles_factura/detalle/id_producto/text()', descripcion))::VARCHAR AS id_producto,
+               unnest(xpath('/factura/detalles_factura/detalle/cantidad/text()', descripcion))::VARCHAR AS cantidad,
+               unnest(xpath('/factura/detalles_factura/detalle/valor_total/text()', descripcion))::VARCHAR AS valor_total,
+               unnest(xpath('/factura/detalles_factura/detalle/descuento/text()', descripcion))::VARCHAR AS descuento
         FROM proyecto.xml_facturas
         WHERE factura_id = p_factura_id;
 BEGIN
@@ -1224,6 +1219,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- SELECT * FROM proyecto.obtener_detalles_factura_xml(1)
 
 CREATE OR REPLACE FUNCTION proyecto.obtener_total_impuesto(p_factura_id INTEGER)
 RETURNS DOUBLE PRECISION AS $$
