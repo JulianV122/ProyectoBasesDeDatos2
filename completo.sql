@@ -580,8 +580,8 @@ END;
 $$ LANGUAGE plpgsql;
 
 
-CREATE OR REPLACE FUNCTION proyecto.insertar_informe_top10()
-RETURNS VOID
+CREATE OR REPLACE PROCEDURE proyecto.insertar_informe_top10()
+LANGUAGE plpgsql
 AS $$
 DECLARE
     datos_json jsonb;
@@ -599,13 +599,13 @@ BEGIN
     FROM proyecto.informe_top10();
 
     -- Insertar el informe en la tabla 'proyecto.informes'
-    INSERT INTO proyecto.informes (id,tipo_informe, fecha, datos_json)
-    VALUES (nextval('proyecto.seq_informes'),'Top 10 productos más vendidos', CURRENT_DATE, datos_json);
+    INSERT INTO proyecto.informes (tipo_informe, fecha, datos_json)
+    VALUES ('Top 10 productos más vendidos', CURRENT_DATE, datos_json);
 
     -- Confirmar inserción (opcional para logging)
     RAISE NOTICE 'Informe Top 10 insertado con éxito en la fecha %', CURRENT_DATE;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 
 -- FUNCIONALIDAD 12 --
@@ -688,7 +688,7 @@ BEGIN
 
     total := NEW.cantidad * (NEW.valor_total / NULLIF(NEW.cantidad, 0)); 
 
-    INSERT INTO proyecto.auditorias (id,fecha, nombre_cliente, cantidad, nombre_producto, total) VALUES (nextval('proyecto.seq_auditorias'),CURRENT_DATE, nombre_cliente, NEW.cantidad, nombre_producto, total);
+    INSERT INTO proyecto.auditorias (fecha, nombre_cliente, cantidad, nombre_producto, total) VALUES (CURRENT_DATE, nombre_cliente, NEW.cantidad, nombre_producto, total);
 
     RETURN NEW;
 END;
@@ -740,6 +740,8 @@ EXCEPTION
 END;
 $$;
 
+CALL proyecto.crear_metodo_pago('Pago con tarjeta', 'TD'); 
+
 
 CREATE OR REPLACE PROCEDURE proyecto.modificar_metodo_pago(p_id INTEGER, p_descripcion VARCHAR, p_identificador VARCHAR)
 LANGUAGE plpgsql
@@ -762,6 +764,7 @@ EXCEPTION
 END;
 $$;
 
+CALL proyecto.modificar_metodo_pago(2, 'Pago con tarjeta actualizado', 'TD');
 
 
 CREATE OR REPLACE PROCEDURE proyecto.eliminar_metodo_pago(p_id INTEGER)
@@ -812,7 +815,7 @@ CREATE OR REPLACE PROCEDURE proyecto.modificar_factura(
     p_subtotal DOUBLE PRECISION, 
     p_total_impuestos DOUBLE PRECISION, 
     p_total DOUBLE PRECISION, 
-    p_estadoF proyecto.estado_factura, 
+    p_estadoF VARCHAR, 
     p_id_cliente INTEGER, 
     p_id_metodo_pago INTEGER)
 LANGUAGE plpgsql
@@ -824,7 +827,7 @@ BEGIN
         subtotal = p_subtotal,
         total_impuestos = p_total_impuestos,
         total = p_total,
-        estadoF = p_estadoF,
+        estadoF = p_estadoF::proyecto.estado_factura,
         id_cliente = p_id_cliente,
         id_metodo_pago = p_id_metodo_pago
     WHERE id = p_id;
@@ -840,6 +843,8 @@ EXCEPTION
         RAISE EXCEPTION 'La categoría, cliente o método de pago no existen';
 END;
 $$;
+
+CALL proyecto.modificar_factura(2, 'FAC002', '2024-11-26', 1100.0, 220.0, 1320.0, 'PAGADA', 2, 1);
 
 
 CREATE OR REPLACE PROCEDURE proyecto.eliminar_factura(p_id INTEGER)
@@ -937,7 +942,7 @@ BEGIN
 
     UPDATE proyecto.facturas SET id_cliente = p_cliente_id WHERE id = p_factura_id;
 
-    v_resultado := format('Cliente % agregado a la factura %.', p_cliente_id, p_factura_id);
+    v_resultado := format('Cliente %s agregado a la factura %s.', p_cliente_id, p_factura_id);
     RETURN v_resultado;
 
 EXCEPTION
@@ -946,6 +951,7 @@ EXCEPTION
 END;
 $$ LANGUAGE plpgsql;
 
+SELECT proyecto.agregar_cliente_a_factura(1, 1);
 
 --Agregar productos al detalle de la factura
 CREATE OR REPLACE FUNCTION proyecto.agregar_producto_a_detalle_factura(p_factura_id INTEGER, p_producto_id INTEGER, p_cantidad INTEGER)
@@ -972,10 +978,11 @@ BEGIN
 EXCEPTION
     WHEN foreign_key_violation THEN
         RETURN 'Verifique que el producto y la factura existan.';
-	WHEN data_exception THEN
-        RETURN 'Cantidad o precio inválido.';
 END;
 $$ LANGUAGE plpgsql;
+
+SELECT proyecto.agregar_producto_a_detalle_factura(1,1000, 3);
+
 
 --Calcular impuestos de los productos
 CREATE OR REPLACE FUNCTION proyecto.calcular_impuestos_factura(p_factura_id INTEGER)
@@ -1016,7 +1023,7 @@ BEGIN
         total = v_subtotal + v_total_impuestos
     WHERE id = p_factura_id;
 
-    v_resultado := format('Impuestos calculados para la factura %: Subtotal = %, Total Impuestos = %, Total = %', p_factura_id, v_subtotal, v_total_impuestos, v_subtotal + v_total_impuestos);
+    v_resultado := format('Impuestos calculados para la factura %s: Subtotal = %s, Total Impuestos = %s, Total = %s', p_factura_id, v_subtotal, v_total_impuestos, v_subtotal + v_total_impuestos);
     RETURN v_resultado;
 
 EXCEPTION
@@ -1039,10 +1046,10 @@ BEGIN
 
     IF p_tipo_descuento = 'POR_PRODUCTO' THEN
         UPDATE proyecto.detalles_facturas SET descuento = descuento + p_valor_descuento WHERE factura_id = p_factura_id;
-        v_resultado := format('Descuento de % aplicado por producto a la factura %.', p_valor_descuento, p_factura_id);
+        v_resultado := format('Descuento de %s aplicado por producto a la factura %s.', p_valor_descuento, p_factura_id);
     ELSIF p_tipo_descuento = 'TOTAL' THEN
-        UPDATE proyecto.facturas SET descuento_total = descuento_total + p_valor_descuento, total = total - p_valor_descuento WHERE id = p_factura_id;
-        v_resultado := format('Descuento total de % aplicado a la factura %.', p_valor_descuento, p_factura_id);
+        UPDATE proyecto.facturas SET total = total - p_valor_descuento WHERE id = p_factura_id;
+        v_resultado := format('Descuento total de %s aplicado a la factura %s.', p_valor_descuento, p_factura_id);
     ELSE
         v_resultado := 'Tipo de descuento no válido.';
     END IF;
@@ -1072,7 +1079,7 @@ BEGIN
 
     UPDATE proyecto.facturas SET id_metodo_pago = p_metodo_pago_id WHERE id = p_factura_id;
 
-    v_resultado := format('Método de pago % agregado a la factura %.', p_metodo_pago_id, p_factura_id);
+    v_resultado := format('Método de pago %s agregado a la factura %s.', p_metodo_pago_id, p_factura_id);
     RETURN v_resultado;
 
 EXCEPTION
@@ -1091,8 +1098,8 @@ RETURNS TRIGGER AS $$
 DECLARE
     v_descripcion TEXT;
 BEGIN
-    -- Construir la descripción en formato XML con la información requerida
-    SELECT 
+    -- Construir la descripción inicial con una estructura XML básica
+    v_descripcion := 
         '<factura>' ||
         '<factura_id>' || NEW.id || '</factura_id>' ||
         '<codigo_factura>' || NEW.codigo || '</codigo_factura>' ||
@@ -1102,20 +1109,15 @@ BEGIN
         '<total>' || NEW.total || '</total>' ||
         '<cliente>' ||
         '<id_cliente>' || NEW.id_cliente || '</id_cliente>' ||
-        '<nombre_cliente>' || c.nombre || '</nombre_cliente>' ||
-        '<documento_cliente>' || c.numero_documento || '</documento_cliente>' ||
-        '<direccion_cliente>' || c.direccion || '</direccion_cliente>' ||
+        '<nombre_cliente></nombre_cliente>' ||  -- Inicializa vacío si el cliente no está cargado
+        '<documento_cliente></documento_cliente>' ||  -- Inicializa vacío
+        '<direccion_cliente></direccion_cliente>' ||  -- Inicializa vacío
         '</cliente>' ||
         '<estado>' || NEW.estadoF || '</estado>' ||
         '<id_metodo_pago>' || NEW.id_metodo_pago || '</id_metodo_pago>' ||
-        '<descripcion_metodo_pago>' || mp.descripcion || '</descripcion_metodo_pago>' ||
-        '<detalles_factura>' ||
-        '</detalles_factura>' ||
-        '</factura>'
-    INTO v_descripcion
-    FROM proyecto.clientes c
-    JOIN proyecto.metodos_pago mp ON mp.id = NEW.id_metodo_pago
-    WHERE c.id = NEW.id_cliente;
+        '<descripcion_metodo_pago></descripcion_metodo_pago>' || -- Inicializa vacío
+        '<detalles_factura></detalles_factura>' ||  -- Estructura inicial para detalles
+        '</factura>';
 
     -- Insertar el registro en la tabla xml_facturas
     INSERT INTO proyecto.xml_facturas (id, factura_id, descripcion)
@@ -1151,6 +1153,7 @@ DECLARE
         JOIN proyecto.productos pr ON dp.producto_id = pr.id
         WHERE dp.factura_id = NEW.factura_id;
 BEGIN
+    -- Crear el contenido para los detalles de la factura
     OPEN cur;
     LOOP
         FETCH cur INTO detalle;
@@ -1164,12 +1167,12 @@ BEGIN
     FROM proyecto.xml_facturas
     WHERE factura_id = NEW.factura_id;
 
-    -- Si v_descripcion es nulo, inicializarlo con un valor predeterminado
+    -- Si v_descripcion es nulo, inicializarla con una estructura XML mínima
     IF v_descripcion IS NULL THEN
-        v_descripcion := '<detalles_factura></detalles_factura>';
+        v_descripcion := '<factura><detalles_factura></detalles_factura></factura>';
     END IF;
 
-    -- Modificar la descripción para actualizar la sección <detalles_factura>
+    -- Modificar la descripción para incluir los nuevos detalles
     v_descripcion := regexp_replace(v_descripcion, '<detalles_factura>.*</detalles_factura>', '<detalles_factura>' || v_detalles_factura || '</detalles_factura>');
 
     -- Actualizar la tabla xml_facturas con la nueva descripción
@@ -1194,23 +1197,30 @@ RETURNS TABLE (nombre_cliente VARCHAR, documento_cliente VARCHAR, direccion_clie
 BEGIN
     RETURN QUERY
     SELECT
-        xpath('/factura/clientes/nombre_cliente/text()', descripcion)::VARCHAR AS nombre_cliente,
-        xpath('/factura/clientes/documento_cliente/text()', descripcion)::VARCHAR AS documento_cliente,
-        xpath('/factura/clientes/direccion_cliente/text()', descripcion)::VARCHAR AS direccion_cliente
+        xpath('/factura/clientes/nombre_cliente/text()', descripcion::xml)::VARCHAR AS nombre_cliente,
+        xpath('/factura/clientes/documento_cliente/text()', descripcion::xml)::VARCHAR AS documento_cliente,
+        xpath('/factura/clientes/direccion_cliente/text()', descripcion::xml)::VARCHAR AS direccion_cliente
     FROM proyecto.xml_facturas
     WHERE factura_id = p_factura_id;
 END;
 $$ LANGUAGE plpgsql;
 
+
 CREATE OR REPLACE FUNCTION proyecto.obtener_detalles_factura_xml(p_factura_id INTEGER)
 RETURNS TABLE (nombre_producto VARCHAR, id_producto INTEGER, cantidad INTEGER, valor_total NUMERIC, descuento NUMERIC) AS $$
 DECLARE
+    nombre_producto TEXT;
+    id_producto INTEGER;
+    cantidad INTEGER;
+    valor_total NUMERIC;
+    descuento NUMERIC;
+
     cur CURSOR FOR
-        SELECT unnest(xpath('/factura/detalles_factura/detalle/nombre_producto/text()', descripcion))::VARCHAR AS nombre_producto,
-               unnest(xpath('/factura/detalles_factura/detalle/id_producto/text()', descripcion))::INTEGER AS id_producto,
-               unnest(xpath('/factura/detalles_factura/detalle/cantidad/text()', descripcion))::INTEGER AS cantidad,
-               unnest(xpath('/factura/detalles_factura/detalle/valor_total/text()', descripcion))::NUMERIC AS valor_total,
-               unnest(xpath('/factura/detalles_factura/detalle/descuento/text()', descripcion))::NUMERIC AS descuento
+        SELECT unnest(xpath('/factura/detalles_factura/detalle/nombre_producto/text()', descripcion::xml)::text[]) AS nombre_producto,
+               unnest(xpath('/factura/detalles_factura/detalle/id_producto/text()', descripcion::xml)::text[])::INTEGER AS id_producto,
+               unnest(xpath('/factura/detalles_factura/detalle/cantidad/text()', descripcion::xml)::text[])::INTEGER AS cantidad,
+               unnest(xpath('/factura/detalles_factura/detalle/valor_total/text()', descripcion::xml)::text[])::NUMERIC AS valor_total,
+               unnest(xpath('/factura/detalles_factura/detalle/descuento/text()', descripcion::xml)::text[])::NUMERIC AS descuento
         FROM proyecto.xml_facturas
         WHERE factura_id = p_factura_id;
 BEGIN
@@ -1223,6 +1233,7 @@ BEGIN
     CLOSE cur;
 END;
 $$ LANGUAGE plpgsql;
+
 
 CREATE OR REPLACE FUNCTION proyecto.obtener_total_impuesto(p_factura_id INTEGER)
 RETURNS DOUBLE PRECISION AS $$
@@ -1243,10 +1254,13 @@ RETURNS FLOAT AS $$
 DECLARE
     v_total_descuento FLOAT;
 BEGIN
-    SELECT SUM((xpath('/factura/detalles_factura/detalle/descuento/text()', descripcion)::TEXT::FLOAT))
+    SELECT SUM(descuento::FLOAT)
     INTO v_total_descuento
-    FROM proyecto.xml_facturas
-    WHERE factura_id = p_factura_id;
+    FROM (
+        SELECT unnest(xpath('/factura/detalles_factura/detalle/descuento/text()', descripcion::xml)::text[]) AS descuento
+        FROM proyecto.xml_facturas
+        WHERE factura_id = p_factura_id
+    ) AS sub;
 
     RETURN v_total_descuento;
 END;

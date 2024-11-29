@@ -5,6 +5,7 @@ import java.sql.Connection;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.util.Scanner;
+import java.sql.Date;
 
 public class Inventario {
     public static boolean agregarInventario(Connection connection, Date fecha, String tipoMovimiento,
@@ -74,8 +75,8 @@ public class Inventario {
             switch (option) {
                 case 1:
                     System.out.print("Ingrese la fecha (YYYY-MM-DD): ");
-                    String fechastr = scanner.nextLine();
-                    Date fecha = Date.valueOf(fechastr);
+                    String fechaStr = scanner.nextLine();
+                    Date fecha = Date.valueOf(fechaStr);
                     System.out.print("Ingrese el tipo de movimiento (ENTRADA o SALIDA): ");
                     String tipoMovimiento = scanner.nextLine();
                     System.out.print("Ingrese las observaciones: ");
@@ -90,8 +91,8 @@ public class Inventario {
                     int idModificar = scanner.nextInt();
                     scanner.nextLine();
                     System.out.print("Ingrese la nueva fecha (YYYY-MM-DD): ");
-                    String nuevaFechastr = scanner.nextLine();
-                    Date nuevaFecha = Date.valueOf(nuevaFechastr);
+                    String nuevaFechaStr = scanner.nextLine();
+                    Date nuevaFecha = Date.valueOf(nuevaFechaStr);
                     System.out.print("Ingrese el nuevo tipo de movimiento: ");
                     String nuevoTipoMovimiento = scanner.nextLine();
                     System.out.print("Ingrese las nuevas observaciones: ");

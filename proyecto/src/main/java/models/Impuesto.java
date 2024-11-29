@@ -76,6 +76,7 @@ public class Impuesto {
                 case 2:
                     System.out.print("Ingrese el id del impuesto a modificar: ");
                     int idModificarIm = scanner.nextInt();
+                    scanner.nextLine();
                     System.out.print("Ingrese el nuevo nombre del impuesto: ");
                     String nuevoNombreIm = scanner.nextLine();
                     System.out.print("Ingrese el nuevo porcentaje del impuesto: ");

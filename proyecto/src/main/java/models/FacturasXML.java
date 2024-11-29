@@ -4,7 +4,6 @@ import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Scanner;
 
 public class FacturasXML {
@@ -15,13 +14,14 @@ public class FacturasXML {
             CallableStatement stmt = connection.prepareCall(sql);
             stmt.setInt(1, facturaId);
             ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
+            while (rs.next()) {
                 String nombre_cliente = rs.getString("nombre_cliente");
                 String documento_cliente = rs.getString("documento_cliente");
                 String direccion_cliente = rs.getString("direccion_cliente");
-                System.out.println("Nombre: " + nombre_cliente);
-                System.out.println("Documento: " + documento_cliente);
-                System.out.println("Dirección: " + direccion_cliente);
+                System.out.println("Nombre Cliente: " + nombre_cliente);
+                System.out.println("Documento Cliente: " + documento_cliente);
+                System.out.println("Direccion Cliente: " + direccion_cliente);
+                System.out.println("-------------------------------");
             }
             rs.close();
             stmt.close();
@@ -29,7 +29,6 @@ public class FacturasXML {
             e.printStackTrace();
         }
     }
-
     public static void obtenerDetallesFacturaXML(Connection connection, int facturaId) {
         String sql = "SELECT * FROM proyecto.obtener_detalles_factura_xml(?)";
         try {
