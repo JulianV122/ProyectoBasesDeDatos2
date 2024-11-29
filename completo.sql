@@ -393,6 +393,8 @@ LANGUAGE plpgsql;
 
 -- PARTE JULIÁN
 
+--CRUD cliente--
+--Crear cliente--
 CREATE OR REPLACE PROCEDURE proyecto.crear_cliente(p_documento varchar, p_nombre varchar, p_direccion varchar, p_telefono varchar, p_email varchar, p_ciudad varchar, p_departamento varchar)
 LANGUAGE plpgsql
 AS $$
@@ -436,11 +438,11 @@ $$;
 
 --CRUD Inventarios--
 --Crear inventario--
-CREATE OR REPLACE PROCEDURE proyecto.crear_inventario(p_fecha date, p_tipo_movimiento proyecto.tipos_movimiento, p_observaciones varchar, p_id_producto int)
+CREATE OR REPLACE PROCEDURE proyecto.crear_inventario(p_fecha date, p_tipo_movimiento varchar, p_observaciones varchar, p_id_producto int)
 LANGUAGE plpgsql
 AS $$
 BEGIN
-	INSERT INTO proyecto.inventarios (id,fecha,tipo_movimiento,observaciones,id_producto) VALUES (nextval('proyecto.seq_inventarios'),p_fecha,p_tipo_movimiento,p_observaciones,p_id_producto);
+	INSERT INTO proyecto.inventarios (id,fecha,tipo_movimiento,observaciones,id_producto) VALUES (nextval('proyecto.seq_inventarios'),p_fecha, (p_tipo_movimiento:: proyecto.tipos_movimiento) ,p_observaciones,p_id_producto);
 	EXCEPTION
 		WHEN unique_violation THEN
 			RAISE EXCEPTION 'El id % ya existe y no se puede repetir', p_id;
@@ -450,11 +452,11 @@ $$;
 
 
 --Editar inventario--
-CREATE OR REPLACE PROCEDURE proyecto.editar_inventario(p_id int,p_fecha date, p_tipo_movimiento proyecto.tipos_movimiento, p_observaciones varchar, p_id_producto int)
+CREATE OR REPLACE PROCEDURE proyecto.editar_inventario(p_id int,p_fecha date, p_tipo_movimiento varchar, p_observaciones varchar, p_id_producto int)
 LANGUAGE plpgsql
 AS $$
 BEGIN
-	UPDATE proyecto.inventarios SET fecha= p_fecha, tipo_movimiento= p_tipo_movimiento, observaciones = p_observaciones, id_producto = p_id_producto WHERE id = p_id;
+	UPDATE proyecto.inventarios SET fecha= p_fecha, tipo_movimiento= (p_tipo_movimiento:: proyecto.tipos_movimiento), observaciones = p_observaciones, id_producto = p_id_producto WHERE id = p_id;
 	IF NOT FOUND THEN
 		RAISE EXCEPTION 'El inventario con ID % no existe', p_id;
 	END IF;
@@ -479,11 +481,11 @@ $$;
 
 --CRUD Informes--
 --Crear informe--
-CREATE OR REPLACE PROCEDURE proyecto.crear_informe(p_tipo_informe varchar, p_fecha date, p_datos_json jsonb)
+CREATE OR REPLACE PROCEDURE proyecto.crear_informe(p_tipo_informe varchar, p_fecha date, p_datos_json varchar)
 LANGUAGE plpgsql
 AS $$
 BEGIN
-	INSERT INTO proyecto.informes (id,tipo_informe,fecha,datos_json) VALUES (nextval('proyecto.seq_informes'),p_tipo_informe,p_fecha,p_datos_json);
+	INSERT INTO proyecto.informes (id,tipo_informe,fecha,datos_json) VALUES (nextval('proyecto.seq_informes'),p_tipo_informe,p_fecha,(p_datos_json::jsonb));
 	EXCEPTION
 		WHEN unique_violation THEN
 			RAISE EXCEPTION 'El id % ya existe y no se puede repetir', p_id;
@@ -492,11 +494,11 @@ END;
 $$;
 
 --Editar informe--
-CREATE OR REPLACE PROCEDURE proyecto.editar_informe(p_id int,p_tipo_informe varchar, p_fecha date, p_datos_json jsonb)
+CREATE OR REPLACE PROCEDURE proyecto.editar_informe(p_id int,p_tipo_informe varchar, p_fecha date, p_datos_json varchar)
 LANGUAGE plpgsql
 AS $$
 BEGIN
-	UPDATE proyecto.informes SET tipo_informe = p_tipo_informe, fecha = p_fecha, datos_json = p_datos_json WHERE id = p_id;
+	UPDATE proyecto.informes SET tipo_informe = p_tipo_informe, fecha = p_fecha, datos_json = (p_datos_json::jsonb) WHERE id = p_id;
 	IF NOT FOUND THEN
 		RAISE EXCEPTION 'El informe con ID % no existe', p_id;
 	END IF;
