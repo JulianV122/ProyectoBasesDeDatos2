@@ -5,6 +5,9 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 //import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
+
+import io.github.cdimascio.dotenv.Dotenv;
+
 //import static com.mongodb.client.model.Filters.eq;
 //import static com.mongodb.client.model.Filters.gt;
 //import static com.mongodb.client.model.Filters.and;
@@ -20,10 +23,11 @@ public class ConexionMongo {
     private MongoCollection<Document> collection;
 
     private ConexionMongo() {
-        this.uri = "mongodb://localhost:27017";
+        Dotenv dotenv = Dotenv.load();
+        this.uri = dotenv.get("MONGO_URL");
         this.mongoClient = MongoClients.create(uri);
-        this.database = mongoClient.getDatabase("pruebas");
-        this.collection = database.getCollection("usuarios");
+        this.database = mongoClient.getDatabase("proyecto");
+        this.collection = database.getCollection("auditorias");
         System.out.println("Conexión MongoDB exitosa");
     }
 

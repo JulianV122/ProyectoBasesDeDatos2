@@ -105,7 +105,7 @@ public class Builder {
         String[] tiposMovimiento = { "ENTRADA", "SALIDA" };
         String[] observaciones = { "Observacion 1", "Observacion 2", "Observacion 3", "Observacion 4",
                 "Observacion 5" };
-        int[] idProductos = { 1000, 1001, 1002, 1003, 1004 };
+        int[] idProductos = { 1000, 1003, 1006, 1009, 1012 };
 
         for (int i = 0; i < 5; i++) {
             Inventario.agregarInventario(connection, fecha, tiposMovimiento[i % 2], observaciones[i], idProductos[i]);
